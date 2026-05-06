@@ -5,7 +5,6 @@ use App\Http\Controllers\ColorWebController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrderWebController;
-use App\Http\Controllers\OtherWebController;
 use App\Http\Controllers\ProductVariantController;
 use App\Http\Controllers\ProductVariantWebController;
 use App\Http\Controllers\ProductWebController;
@@ -15,7 +14,6 @@ use App\Http\Controllers\TypeController;
 use App\Http\Controllers\TypeWebController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserWebController;
-use App\Http\Controllers\VariantWebController;
 use Illuminate\Support\Facades\Route;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 
@@ -51,8 +49,6 @@ Route::delete('/logout', [UserWebController::class, 'logout']); // Support DELET
 |--------------------------------------------------------------------------
 */
 
-Route::get('/other', [OtherWebController::class, 'counter'])->name('other.other');
-
 // Public product routes
 Route::get('/products', [ProductWebController::class, 'getProducts'])->name('products.index');
 Route::get('/products/{productId}', [ProductWebController::class, 'showProductDetail'])->name('product.detail');
@@ -74,7 +70,11 @@ Route::middleware(['is_admin_web'])->group(function() {
 
     // Admin Dashboard Home
     Route::get('/', function() {
-        return view('components.welcome');
+        $totalOrder = \App\Models\Order::count();
+        $totalProduct = \App\Models\Product::count();
+        $totalIncome = \App\Models\Order::where('payment_status', 'paid')->sum('total_price');
+        
+        return view('components.welcome', compact('totalOrder', 'totalProduct', 'totalIncome'));
     })->name('admin');
 
     // ADMIN PRODUCT VIEWS
@@ -131,9 +131,9 @@ Route::middleware(['is_admin_web'])->group(function() {
         return view('components.other.components.color.create_color');
     })->name('create-color');
 
-    Route::get('/variant-create', function() {
-        return view('components.other.components.variant.create_variant');
-    })->name('create-variant');
+    Route::get('/scent-create', function() {
+        return view('components.other.components.scent.create_scent');
+    })->name('create-scent');
 
     // ADMIN CONTROLLER ROUTES
     Route::post('/image/upload', [ImageController::class, 'uploadImage'])->name('image.upload');
@@ -153,6 +153,7 @@ Route::middleware(['is_admin_web'])->group(function() {
     // Order Management
     Route::get('/orders/{orderId}', [OrderWebController::class, 'showDetail'])->name('order.detail');
     Route::post('/orders/{orderId}/update-status', [OrderWebController::class, 'updateStatus'])->name('order.updateStatus');
+    Route::post('/orders/{orderId}/resend-wa', [OrderWebController::class, 'resendTrackingWA'])->name('order.resendWA');
 
     // Product Variant Management
     Route::post('/products/{productId}/variants/create', [ProductVariantWebController::class, 'createProductVariant'])->name('variant.create');
@@ -163,6 +164,8 @@ Route::middleware(['is_admin_web'])->group(function() {
     Route::controller(TypeWebController::class)->group(function() {
         Route::post('/type/create', 'createType')->name('type.create');
         Route::get('/type/get', 'getTypes')->name('type.get');
+        Route::get('/type/{typeId}/edit', 'showEditForm')->name('type.edit.form');
+        Route::put('/type/{typeId}/update', 'updateType')->name('type.update');
         Route::delete('/type/{typeId}/delete', 'deleteType')->name('type.delete');
     });
 
@@ -170,6 +173,8 @@ Route::middleware(['is_admin_web'])->group(function() {
     Route::controller(ColorWebController::class)->group(function() {
         Route::post('/color/create', 'createColor')->name('color.create');
         Route::get('/colors/get', 'getColors')->name('colors.get');
+        Route::get('/color/{colorId}/edit', 'showEditForm')->name('color.edit.form');
+        Route::put('/color/{colorId}/update', 'updateColor')->name('color.update');
         Route::delete('/color/{colorId}/delete', 'deleteColor')->name('color.delete');
     });
 
@@ -177,6 +182,8 @@ Route::middleware(['is_admin_web'])->group(function() {
     Route::controller(ScentWebController::class)->group(function() {
         Route::post('/scent/create', 'createScent')->name('scent.create');
         Route::get('/scent/get', 'getScents')->name('scent.get');
+        Route::get('/scent/{scentId}/edit', 'showEditForm')->name('scent.edit.form');
+        Route::put('/scent/{scentId}/update', 'updateScent')->name('scent.update');
         Route::delete('/scent/{scentId}/delete', 'deleteScent')->name('scent.delete');
         Route::put('/scent/{scentId}/toggle', 'toggleStatus')->name('scent.toggle');
     });
@@ -185,14 +192,9 @@ Route::middleware(['is_admin_web'])->group(function() {
     Route::controller(StatusWebController::class)->group(function() {
         Route::post('/status/create', 'createStatus')->name('status.create');
         Route::get('/status/get', 'getStatuses')->name('status.get');
+        Route::get('/status/{statusId}/edit', 'showEditForm')->name('status.edit.form');
+        Route::put('/status/{statusId}/update', 'updateStatus')->name('status.update');
         Route::delete('/status/{statusId}/delete', 'deleteStatus')->name('status.delete');
-    });
-
-    // Variant Management
-    Route::controller(VariantWebController::class)->group(function() {
-        Route::post('/variant/create', 'createVariant')->name('variant.create');
-        Route::get('/variant/get', 'getVariants')->name('variant.get');
-        Route::delete('/variant/{variantId}/delete', 'deleteVariant')->name('variant.delete');
     });
 
 });

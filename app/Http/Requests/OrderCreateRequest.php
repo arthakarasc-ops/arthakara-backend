@@ -42,11 +42,11 @@ class OrderCreateRequest extends FormRequest
             'billing_address.country' => ['required', 'string', 'max:100'],
             'billing_address.phone_number' => ['required', 'string', 'max:20'],
             'shipping_method_id' => ['required', 'integer', 'exists:shipping_methods,id'],
-            'total_price' => ['required', 'numeric', 'min:0'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_variant_id' => ['required', 'integer', 'exists:product_variants,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'items.*.price' => ['required', 'numeric', 'min:0']
+            'items.*.scents' => ['required', 'array', 'size:2'],
+            'items.*.scents.*' => ['required', 'integer', 'exists:scents,id']
         ];
     }
 

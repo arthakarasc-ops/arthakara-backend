@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\{
     AddressController,
     BillingAddressController,
+    CartController,
     CollectionController,
     ColorController,
     ImageController,
@@ -65,6 +66,8 @@ Route::controller(ShippingMethodController::class)->group(function () {
     Route::get('/shipping-methods/{methodId}', 'getShippingMethod')->whereNumber('methodId');
 });
 
+
+
 /*
 |--------------------------------------------------------------------------
 | IMAGE
@@ -74,10 +77,9 @@ Route::post('/image/upload', [ImageController::class, 'uploadImage']);
 
 /*
 |--------------------------------------------------------------------------
-| PAYMENT
+| PAYMENT (Callback - tanpa auth, dipanggil oleh Midtrans)
 |--------------------------------------------------------------------------
 */
-Route::post('/pay', [PaymentController::class, 'createTransaction']);
 Route::post('/midtrans-callback', [PaymentController::class, 'callback']);
 
 /*
@@ -121,6 +123,26 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/users/orders', 'getUserOrders');
         Route::get('/orders/{orderId}', 'getOrderDetail')->whereNumber('orderId');
         Route::post('/orders/create', 'createNewOrder');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | PAYMENT (Create - butuh auth)
+    |--------------------------------------------------------------------------
+    */
+    Route::post('/pay', [PaymentController::class, 'createTransaction']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | USER CART
+    |--------------------------------------------------------------------------
+    */
+    Route::controller(CartController::class)->group(function () {
+        Route::get('/cart', 'index');
+        Route::post('/cart', 'store');
+        Route::put('/cart/{id}', 'update')->whereNumber('id');
+        Route::delete('/cart/{id}', 'destroy')->whereNumber('id');
+        Route::delete('/cart', 'clear');
     });
 
     /*

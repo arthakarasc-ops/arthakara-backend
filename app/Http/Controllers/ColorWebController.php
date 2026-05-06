@@ -9,33 +9,63 @@ use Illuminate\Support\Facades\Log;
 
 class ColorWebController extends Controller
 {
-    public function createColor(ColorCreateRequest $request) {
+    public function createColor(ColorCreateRequest $request)
+    {
         try {
             $data = $request->validated();
-    
-            $color = new Color([
-                'name' => $data['name'],
-                'hex_code' => $data['hex_code']
-            ]);
-            $color->save();
 
-            return redirect()->route('other.other')->with('success', 'Warna berhasil dibuat!');
+            Color::create([
+                'name'     => $data['name'],
+                'hex_code' => $data['hex_code'] ?? null,
+            ]);
+
+            return redirect()->route('colors.get')->with('success', 'Warna berhasil dibuat!');
         } catch (\Exception $ex) {
             Log::error('Color creation failed: ' . $ex->getMessage());
             return redirect()->back()->with('error', 'Gagal membuat warna. Silakan coba lagi.');
-        } 
+        }
     }
 
-    public function getColors() {
+    public function getColors()
+    {
         $colors = Color::all();
         return view('components.other.components.color.list_color', compact('colors'));
     }
 
-    public function deleteColor(int $colorId) {
-        $type = Color::findOrFail($colorId);
-        $type->delete();
+    public function showEditForm(int $colorId)
+    {
+        $color = Color::findOrFail($colorId);
+        return view('components.other.components.color.edit_color', compact('color'));
+    }
 
-        return redirect()->route('colors.get')->with('success', 'Color deleted!');
+    public function updateColor(Request $request, int $colorId)
+    {
+        try {
+            $validated = $request->validate([
+                'name'     => 'required|string|max:255',
+                'hex_code' => 'nullable|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
+            ]);
+
+            $color = Color::findOrFail($colorId);
+            $color->update($validated);
+
+            return redirect()->route('colors.get')->with('success', 'Warna berhasil diperbarui!');
+        } catch (\Exception $ex) {
+            Log::error('Color update failed: ' . $ex->getMessage());
+            return redirect()->back()->with('error', 'Gagal memperbarui warna.');
+        }
+    }
+
+    public function deleteColor(int $colorId)
+    {
+        try {
+            $color = Color::findOrFail($colorId);
+            $color->delete();
+
+            return redirect()->route('colors.get')->with('success', 'Warna berhasil dihapus!');
+        } catch (\Exception $ex) {
+            Log::error('Color deletion failed: ' . $ex->getMessage());
+            return redirect()->back()->with('error', 'Gagal menghapus warna.');
+        }
     }
 }
-

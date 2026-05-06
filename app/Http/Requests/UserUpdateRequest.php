@@ -26,12 +26,14 @@ class UserUpdateRequest extends FormRequest
             'full_name' => ['nullable', 'max:100'],
             'phone_number' => ['nullable', 'max:20'],
             'nickname' => ['nullable', 'max:100'],
+            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
         ];
     }
 
     protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator) {
-        throw new HttpResponseException(response([
+        throw new HttpResponseException(response()->json([
+            "error" => "Validasi gagal.",
             "errors" => $validator->getMessageBag()
-        ]));
+        ], 422));
     }
 }

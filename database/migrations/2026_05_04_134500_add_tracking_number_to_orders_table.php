@@ -11,11 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('colors', function (Blueprint $table) {
-            $table->id();
-            $table->string('name', 50)->nullable(false);
-            $table->string('hex_code', 50)->nullable();
-            $table->timestamps();
+        Schema::table('orders', function (Blueprint $table) {
+            $table->string('tracking_number')->nullable()->after('status_id')->comment('Nomor Resi Pengiriman');
         });
     }
 
@@ -24,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('colors');
+        Schema::table('orders', function (Blueprint $table) {
+            $table->dropColumn('tracking_number');
+        });
     }
 };

@@ -41,6 +41,7 @@ class ProductWebController extends Controller
                 'type_id' => $data['type_id'],
                 'slug' => Str::slug($data['name']),
                 'price' => $data['price'],
+                'stock' => $data['stock'] ?? 0,
                 'description' => $data['description'],
             ]);
 
@@ -50,15 +51,21 @@ class ProductWebController extends Controller
                 'image_url' => $uploadedFileUrl,
             ]);
 
-            // 🔥 Attach colors
+            // 🔥 Create variant with selected color
             if ($request->has('color_ids') && !empty($request->color_ids)) {
-                $product->colors()->sync($request->color_ids);
+                foreach ($request->color_ids as $colorId) {
+                    ProductVariant::create([
+                        'product_id' => $product->id,
+                        'color_id' => $colorId,
+                        'image_url' => $uploadedFileUrl,
+                        'stock' => $data['stock'] ?? 0,
+                    ]);
+                }
             }
 
-            // 🔥 Attach flavor variants (max 2)
-            if ($request->has('flavor_variant_ids') && !empty($request->flavor_variant_ids)) {
-                $flavorVariantIds = array_slice($request->flavor_variant_ids, 0, 2);
-                $product->flavorVariants()->sync($flavorVariantIds);
+            // 🔥 Attach scents
+            if ($request->has('scent_ids') && !empty($request->scent_ids)) {
+                $product->scents()->sync($request->scent_ids);
             }
 
             Log::info('Product created successfully with image: ' . $uploadedFileUrl);
@@ -101,18 +108,36 @@ class ProductWebController extends Controller
                 return redirect()->route('products.index')->with('error', 'Produk tidak ditemukan.');
             }
 
-            // Delete related product usage images
+            // Hapus isi keranjang (cart) yang memuat produk ini
+            \App\Models\CartItem::where('product_id', $product->id)->delete();
+
+            // Lepaskan relasi wangi (pivot)
+            $product->scents()->detach();
+
+            // Dapatkan semua variant ID sebelum dihapus
+            $variantIds = $product->variants()->pluck('id')->toArray();
+
+            if (!empty($variantIds)) {
+                // Nullify product_variant_id di order_items agar FK tidak gagal
+                // Data order tetap ada tapi variant-nya null (historical record)
+                \App\Models\OrderItem::whereIn('product_variant_id', $variantIds)
+                    ->update(['product_variant_id' => null]);
+
+                // Hapus semua varian
+                $product->variants()->delete();
+            }
+
+            // Hapus gambar produk
             $product->productUsageImages()->delete();
 
-            // Delete the product
+            // Hapus produk
             $product->delete();
 
             return redirect()->route('products.index')->with('success', 'Produk berhasil dihapus.');
-        } catch (\Exception $e) {
-            // Log the error for debugging
-            Log::error('Product deletion failed: ' . $e->getMessage());
 
-            return redirect()->route('products.index')->with('error', 'Gagal menghapus produk. Silakan coba lagi.');
+        } catch (\Exception $e) {
+            Log::error('Product deletion failed: ' . $e->getMessage());
+            return redirect()->route('products.index')->with('error', 'Gagal menghapus produk: ' . $e->getMessage());
         }
     }
 
@@ -150,11 +175,12 @@ class ProductWebController extends Controller
                 'collection_id' => 'required|integer|exists:collections,id',
                 'type_id' => 'required|integer|exists:types,id',
                 'price' => 'required|numeric|min:0',
+                'stock' => 'required|integer|min:0',
                 'description' => 'required|string',
                 'color_ids' => 'nullable|array',
                 'color_ids.*' => 'exists:colors,id',
-                'flavor_variant_ids' => 'nullable|array|max:2',
-                'flavor_variant_ids.*' => 'exists:variants,id',
+                'scent_ids' => 'nullable|array',
+                'scent_ids.*' => 'exists:scents,id',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5000'
             ]);
 
@@ -165,6 +191,7 @@ class ProductWebController extends Controller
                 'type_id' => $validated['type_id'],
                 'slug' => Str::slug($validated['name']),
                 'price' => $validated['price'],
+                'stock' => $validated['stock'],
                 'description' => $validated['description']
             ]);
 
@@ -187,19 +214,26 @@ class ProductWebController extends Controller
                 }
             }
 
-            // 🔥 Sync colors
+            // 🔥 Sync colors via ProductVariant
             if ($request->has('color_ids') && !empty($request->color_ids)) {
-                $product->colors()->sync($request->color_ids);
+                // Hapus variant lama yang color-nya tidak dipilih
+                $product->variants()->whereNotIn('color_id', $request->color_ids)->delete();
+                // Tambah variant baru jika belum ada
+                foreach ($request->color_ids as $colorId) {
+                    $product->variants()->firstOrCreate(
+                        ['color_id' => $colorId],
+                        ['image_url' => $product->productUsageImages->first()->image_url ?? 'https://via.placeholder.com/150', 'stock' => 0]
+                    );
+                }
             } else {
-                $product->colors()->detach();
+                $product->variants()->delete();
             }
 
-            // 🔥 Sync flavor variants (max 2)
-            if ($request->has('flavor_variant_ids') && !empty($request->flavor_variant_ids)) {
-                $flavorVariantIds = array_slice($request->flavor_variant_ids, 0, 2);
-                $product->flavorVariants()->sync($flavorVariantIds);
+            // 🔥 Sync scents
+            if ($request->has('scent_ids') && !empty($request->scent_ids)) {
+                $product->scents()->sync($request->scent_ids);
             } else {
-                $product->flavorVariants()->detach();
+                $product->scents()->detach();
             }
 
             Log::info('Product updated successfully. ID: ' . $id);
@@ -219,7 +253,7 @@ class ProductWebController extends Controller
             abort(404, 'Produk tidak ditemukan');
         }
 
-        $variants = ProductVariant::with(['colors', 'fabrics', 'sizes'])->where('product_id', $productId)->get();
+        $variants = ProductVariant::with(['color'])->where('product_id', $productId)->get();
 
         return view('components.products.detail_product', [
             'product' => $product,

@@ -33,33 +33,7 @@
             @enderror
         </div>
 
-        <!-- Size -->
-        <div>
-            <label for="size_id" class="block text-gray-700 font-semibold mb-2">Size</label>
-            <select id="size_id" name="size_id" class="w-full p-2 border rounded @error('size_id') border-red-500 @enderror">
-                <option value="" {{ old('size_id') == null ? 'selected' : '' }}>Select a size (optional)</option>
-                @foreach(\App\Models\Size::all() as $size)
-                    <option value="{{ $size->id }}" {{ old('size_id') == $size->id ? 'selected' : '' }}>{{ $size->name }}</option>
-                @endforeach
-            </select>
-            @error('size_id')
-                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-            @enderror
-        </div>
 
-        <!-- Fabric -->
-        <div>
-            <label for="fabric_id" class="block text-gray-700 font-semibold mb-2">Fabric</label>
-            <select id="fabric_id" name="fabric_id" class="w-full p-2 border rounded @error('fabric_id') border-red-500 @enderror">
-                <option value="" {{ old('fabric_id') == null ? 'selected' : '' }}>Select a fabric (optional)</option>
-                @foreach(\App\Models\Fabric::all() as $fabric)
-                    <option value="{{ $fabric->id }}" {{ old('fabric_id') == $fabric->id ? 'selected' : '' }}>{{ $fabric->name }}</option>
-                @endforeach
-            </select>
-            @error('fabric_id')
-                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-            @enderror
-        </div>
 
         <!-- Stock -->
         <div>

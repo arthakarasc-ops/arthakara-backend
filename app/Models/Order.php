@@ -20,15 +20,14 @@ class Order extends Model
         'billing_address_id',
         'shipping_method_id',
         'total_price',
-        'status_id'
+        'status_id',
+        'tracking_number',
+        'midtrans_order_id',
+        'payment_status'
     ];
 
     public function orderItems(): HasMany {
         return $this->hasMany(OrderItem::class, "order_id", "id");
-    }
-
-    public function payments(): HasMany {
-        return $this->hasMany(Payment::class, "order_id", "id");
     }
 
     public function users(): BelongsTo {

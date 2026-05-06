@@ -39,8 +39,6 @@ class ProductVariantWebController extends Controller
             ProductVariant::create([
                 'product_id' => $productId,
                 'color_id' => $data['color_id'],
-                'fabric_id' => $data['fabric_id'],
-                'size_id' => $data['size_id'],
                 'image_url' => $uploadedFileUrl,
                 'stock' => $data['stock'],
             ]);

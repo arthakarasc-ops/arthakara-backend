@@ -46,15 +46,19 @@
             </div>
         </div>
 
-        <div id="add-variant" class="border-2 border-blue-500 p-8 rounded-lg bg-blue-200 mb-7">
+    </div>
+
+    <!-- Scent Section -->
+    <div class="grid grid-cols-2 gap-2">
+        <div id="add-scent" class="border-2 border-blue-500 p-8 rounded-lg bg-blue-200 mb-7">
             <div class="w-full flex justify-between">
-                <h4 class="font-bold text-2xl mb-2">Add New Variant</h4>
-                <a href="{{ route('variant.get') }}" class="font-medium hover:underline hover:opacity-85 transition duration-200">More</a>
+                <h4 class="font-bold text-2xl mb-2">Add New Scent (Wangi)</h4>
+                <a href="{{ route('scent.get') }}" class="font-medium hover:underline hover:opacity-85 transition duration-200">More</a>
             </div>
             <hr>
             <div class="flex justify-between mt-6">
-                <h6>Total Current Variant: <span class="bg-blue-600 rounded-md px-2 font-semibold text-white">{{ $variantCount }}</span></h6>
-                <form action="{{ route('create-variant') }}">
+                <h6>Total Current Scent: <span class="bg-blue-600 rounded-md px-2 font-semibold text-white">{{ $scentCount }}</span></h6>
+                <form action="{{ route('create-scent') }}">
                     <button href="" class="bg-blue-600 hover:bg-blue-700 transition duration-300 rounded-md px-7 py-1 text-white font-semibold">Add</button>
                 </form>
             </div>

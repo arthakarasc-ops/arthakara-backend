@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('province', 100)->nullable(false);
             $table->string('postal_code', 100)->nullable(false);
             $table->string('country', 100)->nullable(false);
+            $table->string('phone_number', 20)->nullable();
             $table->timestamps();
         });
     }

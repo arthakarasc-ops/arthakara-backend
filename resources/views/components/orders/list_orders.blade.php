@@ -1,38 +1,6 @@
 @extends('main.main')
 
 @section('content')
-<!-- Admin Section: Add Variant and Color -->
-<div class="mx-auto mt-10 mb-10">
-    <div class="grid grid-cols-2 gap-2">
-        <div id="add-color" class="border-2 border-blue-500 p-8 rounded-lg bg-blue-200 mb-7">
-            <div class="w-full flex justify-between">
-                <h4 class="font-bold text-2xl mb-2">Add New Color</h4>
-                <a href="{{ route('colors.get') }}" class="font-medium hover:underline hover:opacity-85 transition duration-200">More</a>
-            </div>
-            <hr>
-            <div class="flex justify-between mt-6">
-                <h6>Total Current Color: <span class="bg-blue-600 rounded-md px-2 font-semibold text-white">{{ $colorCount ?? 0 }}</span></h6>
-                <form action="{{ route('create-color') }}">
-                    <button class="bg-blue-600 hover:bg-blue-700 transition duration-300 rounded-md px-7 py-1 text-white font-semibold">Add</button>
-                </form>
-            </div>
-        </div>
-
-        <div id="add-variant" class="border-2 border-blue-500 p-8 rounded-lg bg-blue-200 mb-7">
-            <div class="w-full flex justify-between">
-                <h4 class="font-bold text-2xl mb-2">Add New Variant</h4>
-                <a href="{{ route('variant.get') }}" class="font-medium hover:underline hover:opacity-85 transition duration-200">More</a>
-            </div>
-            <hr>
-            <div class="flex justify-between mt-6">
-                <h6>Total Current Variant: <span class="bg-blue-600 rounded-md px-2 font-semibold text-white">{{ $variantCount ?? 0 }}</span></h6>
-                <form action="{{ route('create-variant') }}">
-                    <button class="bg-blue-600 hover:bg-blue-700 transition duration-300 rounded-md px-7 py-1 text-white font-semibold">Add</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 
 <div class="container mx-auto px-6 py-10">
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6">
@@ -64,9 +32,21 @@
                     <p class="text-gray-600 font-medium">{{ $order->users->email ?? 'Unknown user' }}</p>
                     <p class="text-gray-400 text-sm">{{ \Carbon\Carbon::parse($order->created_at)->format('d-m-Y') }}</p>
 
-                    <span class="bg-red-100 text-red-800 text-xs font-medium px-3 py-1 rounded-full border border-red-400 w-fit">
-                        {{ ucfirst($order->statuses->name) }}
-                    </span>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="bg-red-100 text-red-800 text-xs font-medium px-3 py-1 rounded-full border border-red-400 w-fit">
+                            {{ ucfirst($order->statuses->name) }}
+                        </span>
+                        
+                        @if($order->shippingMethods && $order->shippingMethods->name === 'Take Away')
+                            <span class="bg-amber-100 text-amber-800 text-xs font-medium px-3 py-1 rounded-full border border-amber-400 w-fit">
+                                Take Away
+                            </span>
+                        @else
+                            <span class="bg-indigo-100 text-indigo-800 text-xs font-medium px-3 py-1 rounded-full border border-indigo-400 w-fit">
+                                Delivery
+                            </span>
+                        @endif
+                    </div>
                 </div>
 
                 <div class="p-4 pt-0">

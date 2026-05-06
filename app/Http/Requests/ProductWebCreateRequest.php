@@ -27,6 +27,7 @@ class ProductWebCreateRequest extends FormRequest
             'collection_id' => ['required', 'exists:collections,id'], // Optional: Add existence check for better validation
             'type_id' => ['required', 'exists:types,id'], // Optional: Add existence check
             'price' => ['required', 'numeric', 'min:0'], // Optional: Add numeric/min for price
+            'stock' => ['required', 'integer', 'min:0'],
             'description' => ['required'],
             'image' => ['required', 'image', 'mimes:jpeg,png,jpg,gif', 'max:4096'], // Validate as image file, max 2MB
         ];

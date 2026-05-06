@@ -33,9 +33,9 @@
         <!-- Collection Hex -->
         <div class="mb-4">
             <label class="block text-gray-700 font-semibold mb-2">Color Hex</label>
-            <input type="text" name="hex" value="{{ old('hex') }}"
-                class="w-full p-2 border rounded @error('name') border-red-500 @enderror" required>
-            @error('hex')
+            <input type="text" name="hex_code" value="{{ old('hex_code') }}"
+                class="w-full p-2 border rounded @error('hex_code') border-red-500 @enderror" required placeholder="#000000">
+            @error('hex_code')
                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
             @enderror
         </div>

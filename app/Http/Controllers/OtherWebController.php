@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Color;
 use App\Models\Status;
 use App\Models\Type;
-use App\Models\Variant;
 use Illuminate\Http\Request;
 
 class OtherWebController extends Controller
@@ -14,9 +13,9 @@ class OtherWebController extends Controller
         $statusCount = Status::count();
         $typeCount = Type::count();
         $colorCount = Color::count();
-        $variantCount = Variant::count();
+        $scentCount = \App\Models\Scent::count();
 
-        return view('components.other.other', compact('statusCount', 'typeCount', 'colorCount', 'variantCount'));
+        return view('components.other.other', compact('statusCount', 'typeCount', 'colorCount', 'scentCount'));
     }
 }
 

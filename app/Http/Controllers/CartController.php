@@ -19,20 +19,33 @@ class CartController extends Controller
     */
     public function index(Request $request): JsonResponse
     {
-        $cart = CartItem::with(['product'])
+        // 🔥 EAGER LOADING: Ambil semua data dalam 1 query (Product, Color)
+        $cartItems = CartItem::with(['productVariant.product', 'productVariant.color'])
             ->where('user_id', $request->user()->id)
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'product' => $item->product,
-                    'color' => Color::find($item->color_id),
-                    'scents' => Scent::whereIn('id', $item->scents)->get(),
-                    'qty' => $item->qty,
-                    'price' => $item->price,
-                    'subtotal' => $item->price * $item->qty
-                ];
-            });
+            ->get();
+
+        // Ambil semua scent IDs unik dari seluruh cart untuk optimasi
+        $allScentIds = $cartItems->pluck('scents')->flatten()->unique()->toArray();
+        $scentsMap = Scent::whereIn('id', $allScentIds)->get()->keyBy('id');
+
+        $cart = $cartItems->map(function ($item) use ($scentsMap) {
+            $variant = $item->productVariant;
+            $product = optional($variant)->product;
+            
+            return [
+                'id' => $item->id,
+                'product_variant_id' => $item->product_variant_id,
+                'product_name' => optional($product)->name,
+                'color' => optional($variant->color)->name,
+                'color_hex' => optional($variant->color)->hex_code,
+                'image_url' => $variant->image_url,
+                'scents' => collect($item->scents)->map(fn($id) => $scentsMap->get($id)),
+                'qty' => $item->qty,
+                'price' => (int) $item->price,
+                'subtotal' => (int) ($item->price * $item->qty),
+                'stock_available' => optional($product)->stock ?? 0,
+            ];
+        });
 
         return response()->json([
             'data' => $cart
@@ -47,8 +60,7 @@ class CartController extends Controller
     public function store(Request $request): JsonResponse
     {
         $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'color_id' => 'required|exists:colors,id',
+            'product_variant_id' => 'required|exists:product_variants,id',
             'scents' => 'required|array|size:2',
             'scents.*' => 'exists:scents,id',
             'qty' => 'nullable|integer|min:1'
@@ -58,32 +70,38 @@ class CartController extends Controller
         $qty = $request->qty ?? 1;
 
         return DB::transaction(function () use ($request, $user, $qty) {
+            $variant = \App\Models\ProductVariant::with('product')->findOrFail($request->product_variant_id);
+            $product = $variant->product;
 
-            $product = Product::findOrFail($request->product_id);
+            // ✅ VALIDASI SCENT AKTIF & BERBEDA
+            if (count(array_unique($request->scents)) !== 2) {
+                return response()->json(['error' => 'Pilih 2 wangi yang berbeda.'], 422);
+            }
 
-            // 🔥 VALIDASI SCENT AKTIF
             $scents = Scent::whereIn('id', $request->scents)
                 ->where('is_active', true)
                 ->pluck('id')
                 ->toArray();
 
             if (count($scents) !== 2) {
-                return response()->json([
-                    'error' => 'Invalid scents selected'
-                ], 422);
+                return response()->json(['error' => 'Salah satu wangi tidak aktif.'], 422);
             }
 
-            // 🔥 SORT SCENT (BIAR CONSISTENT)
+            // ✅ CEK STOK
+            if ($product->stock < $qty) {
+                return response()->json(['error' => 'Stok tidak mencukupi. Sisa: ' . $product->stock], 422);
+            }
+
+            // SORT SCENT UNTUK CEK DUPLIKASI DI CART
             sort($scents);
 
-            // 🔥 HITUNG HARGA
+            // HITUNG HARGA (Base Price + Extra Price Scent)
             $extraPrice = Scent::whereIn('id', $scents)->sum('extra_price');
             $finalPrice = $product->price + $extraPrice;
 
-            // 🔥 CEK ITEM SAMA
+            // CEK APAKAH ITEM YANG SAMA SUDAH ADA DI KERANJANG
             $existingItem = CartItem::where('user_id', $user->id)
-                ->where('product_id', $product->id)
-                ->where('color_id', $request->color_id)
+                ->where('product_variant_id', $variant->id)
                 ->get()
                 ->first(function ($item) use ($scents) {
                     $itemScents = $item->scents;
@@ -92,26 +110,30 @@ class CartController extends Controller
                 });
 
             if ($existingItem) {
+                $newQty = $existingItem->qty + $qty;
+                if ($product->stock < $newQty) {
+                    return response()->json(['error' => 'Total di keranjang melebihi stok yang tersedia.'], 422);
+                }
+                
                 $existingItem->increment('qty', $qty);
 
                 return response()->json([
-                    'message' => 'Cart updated (merged)',
+                    'message' => 'Jumlah produk di keranjang diperbarui.',
                     'data' => $existingItem
                 ]);
             }
 
-            // 🔥 CREATE NEW ITEM
+            // CREATE ITEM BARU
             $cartItem = CartItem::create([
                 'user_id' => $user->id,
-                'product_id' => $product->id,
-                'color_id' => $request->color_id,
+                'product_variant_id' => $variant->id,
                 'scents' => $scents,
                 'qty' => $qty,
                 'price' => $finalPrice
             ]);
 
             return response()->json([
-                'message' => 'Added to cart',
+                'message' => 'Berhasil ditambahkan ke keranjang.',
                 'data' => $cartItem
             ], 201);
         });

@@ -15,14 +15,10 @@ class Status extends Model
     public $incrementing = true;
 
     protected $fillable = [
-      'name'  
+        'name'
     ];
 
     public function orders(): HasMany {
-        return $this->hasMany(Status::class, "status_id", "id");
-    }
-
-    public function payments(): HasMany {
-        return $this->hasMany(Payment::class, "payment_status_id", "id");
+        return $this->hasMany(Order::class, "status_id", "id");
     }
 }

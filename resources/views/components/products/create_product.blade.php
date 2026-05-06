@@ -39,6 +39,16 @@
             @enderror
         </div>
 
+        <!-- Stock -->
+        <div>
+            <label for="stock" class="block text-gray-700 font-semibold mb-2">Stok Barang</label>
+            <input type="number" id="stock" name="stock" value="{{ old('stock', 0) }}" min="0"
+                class="w-full p-2 border rounded @error('stock') border-red-500 @enderror" required>
+            @error('stock')
+                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+            @enderror
+        </div>
+
         <!-- Description -->
         <div>
             <label for="description" class="block text-gray-700 font-semibold mb-2">Description</label>
@@ -100,16 +110,16 @@
             @enderror
         </div>
 
-        <!-- Flavor Variants -->
+        <!-- Scents -->
         <div>
-            <label for="flavor_variant_ids" class="block text-gray-700 font-semibold mb-2">Flavor Variants (Max 2)</label>
-            <select id="flavor_variant_ids" name="flavor_variant_ids[]" class="w-full p-2 border rounded @error('flavor_variant_ids') border-red-500 @enderror" multiple>
-                @foreach(\App\Models\Variant::all() as $variant)
-                    <option value="{{ $variant->id }}" {{ in_array($variant->id, old('flavor_variant_ids', [])) ? 'selected' : '' }}>{{ $variant->name }} ({{ $variant->type }})</option>
+            <label for="scent_ids" class="block text-gray-700 font-semibold mb-2">Scents/Aroma</label>
+            <select id="scent_ids" name="scent_ids[]" class="w-full p-2 border rounded @error('scent_ids') border-red-500 @enderror" multiple>
+                @foreach(\App\Models\Scent::all() as $scent)
+                    <option value="{{ $scent->id }}" {{ in_array($scent->id, old('scent_ids', [])) ? 'selected' : '' }}>{{ $scent->name }} (+Rp{{ number_format($scent->extra_price) }})</option>
                 @endforeach
             </select>
-            <small class="text-gray-500">Pilih maksimal 2 varian rasa/wangi</small>
-            @error('flavor_variant_ids')
+            <small class="text-gray-500">Gunakan CTRL/CMD + Click untuk memilih lebih dari 1 aroma</small>
+            @error('scent_ids')
                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
             @enderror
         </div>

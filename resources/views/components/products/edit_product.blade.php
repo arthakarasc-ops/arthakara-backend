@@ -40,6 +40,16 @@
             @enderror
         </div>
 
+        <!-- Stock -->
+        <div>
+            <label for="stock" class="block text-gray-700 font-semibold mb-2">Stok Barang</label>
+            <input type="number" id="stock" name="stock" value="{{ old('stock', $product->stock) }}" min="0"
+                class="w-full p-2 border rounded @error('stock') border-red-500 @enderror" required>
+            @error('stock')
+                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+            @enderror
+        </div>
+
         <!-- Description -->
         <div>
             <label for="description" class="block text-gray-700 font-semibold mb-2">Description</label>
@@ -91,7 +101,7 @@
             <select id="color_ids" name="color_ids[]" class="w-full p-2 border rounded @error('color_ids') border-red-500 @enderror">
                 <option value="" disabled>Select a color</option>
                 @foreach(\App\Models\Color::all() as $color)
-                    <option value="{{ $color->id }}" {{ in_array($color->id, old('color_ids', $product->colors->pluck('id')->toArray())) ? 'selected' : '' }}>{{ $color->name }}</option>
+                    <option value="{{ $color->id }}" {{ in_array($color->id, old('color_ids', $product->variants ? $product->variants->pluck('color_id')->toArray() : [])) ? 'selected' : '' }}>{{ $color->name }}</option>
                 @endforeach
             </select>
             @error('color_ids')
@@ -99,16 +109,16 @@
             @enderror
         </div>
 
-        <!-- Flavor Variants -->
+        <!-- Scents -->
         <div>
-            <label for="flavor_variant_ids" class="block text-gray-700 font-semibold mb-2">Flavor Variants (Max 2)</label>
-            <select id="flavor_variant_ids" name="flavor_variant_ids[]" class="w-full p-2 border rounded @error('flavor_variant_ids') border-red-500 @enderror" multiple>
-                @foreach(\App\Models\Variant::all() as $variant)
-                    <option value="{{ $variant->id }}" {{ in_array($variant->id, old('flavor_variant_ids', $product->flavorVariants->pluck('id')->toArray())) ? 'selected' : '' }}>{{ $variant->name }} ({{ $variant->type }})</option>
+            <label for="scent_ids" class="block text-gray-700 font-semibold mb-2">Scents/Aroma (Bisa lebih dari 1)</label>
+            <select id="scent_ids" name="scent_ids[]" class="w-full p-2 border rounded @error('scent_ids') border-red-500 @enderror" multiple>
+                @foreach(\App\Models\Scent::all() as $scent)
+                    <option value="{{ $scent->id }}" {{ in_array($scent->id, old('scent_ids', $product->scents ? $product->scents->pluck('id')->toArray() : [])) ? 'selected' : '' }}>{{ $scent->name }} (+Rp{{ number_format($scent->extra_price) }})</option>
                 @endforeach
             </select>
-            <small class="text-gray-500">Pilih maksimal 2 varian rasa/wangi</small>
-            @error('flavor_variant_ids')
+            <small class="text-gray-500">Gunakan CTRL/CMD + Click untuk memilih lebih dari 1 aroma</small>
+            @error('scent_ids')
                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
             @enderror
         </div>

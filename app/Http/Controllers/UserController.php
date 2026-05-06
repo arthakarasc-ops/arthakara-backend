@@ -153,6 +153,16 @@ class UserController extends Controller
 
             $data = $request->validated();
 
+            if ($request->hasFile('avatar')) {
+                // Delete old avatar if exists
+                if ($user->avatar) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($user->avatar);
+                }
+                
+                $path = $request->file('avatar')->store('avatars', 'public');
+                $data['avatar'] = $path;
+            }
+
             $user->fill($data);
             $user->save();
 
@@ -165,11 +175,10 @@ class UserController extends Controller
             ], 200);
 
         } catch (Exception $e) {
-            throw new HttpResponseException(response()->json([
-                'error' => 'Terjadi kesalahan.',
-                'message' => $e->getMessage(),
+            return response()->json([
+                'error' => $e->getMessage(),
                 'isSuccess' => false
-            ], 500));
+            ], 500);
         }
     }
 

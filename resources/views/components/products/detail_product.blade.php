@@ -130,10 +130,16 @@ document.getElementById("editVariantForm").addEventListener("submit", async func
                 </div>
 
                 <div class="p-4 flex-grow">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-1">
-                        {{ $product->name }} {{ $variant->fabrics ? '- ' . $variant->fabrics->name : '' }}
-                    </h3>
-                    <p class="text-sm text-gray-500">Stock: {{ $variant->stock }}</p>
+                    <div class="flex items-center gap-2 mb-1">
+                        @if($variant->color && $variant->color->color_hex)
+                            <span class="w-3 h-3 rounded-full border border-gray-300" style="background-color: {{ $variant->color->color_hex }}"></span>
+                        @endif
+                        <h3 class="text-xl font-semibold text-gray-800">
+                            {{ $variant->color ? $variant->color->name : 'No Color' }}
+                        </h3>
+                    </div>
+                    <p class="text-sm text-gray-500">Product: {{ $product->name }}</p>
+                    <p class="text-sm font-medium text-blue-600">Stock: {{ $variant->stock }}</p>
                 </div>
 
                 <div class="p-4 pt-0 flex flex-col gap-2">

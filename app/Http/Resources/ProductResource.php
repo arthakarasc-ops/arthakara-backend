@@ -18,13 +18,14 @@ class ProductResource extends JsonResource
 
             'slug' => $this->slug,
             'price' => (int) $this->price,
+            'stock' => (int) $this->stock,
             'description' => $this->description,
 
             'usage_image' => $this->productUsageImages->isNotEmpty()
                 ? $this->productUsageImages->first()->image_url
                 : null,
 
-            'colors' => $this->whenLoaded('colors'),
+            // Warna sudah ada di dalam 'variants' (masing-masing variant punya color)
 
             // ✅ VARIANTS (warna)
             'variants' => $this->whenLoaded('variants', function () {
@@ -38,16 +39,7 @@ class ProductResource extends JsonResource
                 })->values();
             }),
 
-            // ✅ FLAVOR VARIANTS (rasa/wangi - max 2)
-            'flavor_variants' => $this->whenLoaded('flavorVariants', function () {
-                return $this->flavorVariants->map(function ($fv) {
-                    return [
-                        'id' => $fv->id,
-                        'name' => $fv->name,
-                        'type' => $fv->type,
-                    ];
-                })->values();
-            }),
+            // flavor_variants sudah diganti ke scents (lihat di bawah)
 
             // ✅ SCENTS
             'scents' => $this->whenLoaded('scents', function () {
