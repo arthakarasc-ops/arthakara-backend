@@ -2,7 +2,7 @@
     <div class="overflow-y-auto flex-1 custom-scrollbar">
         <div class="p-6 text-center">
             <a href="{{ route('admin') }}">
-                <img src="{{ asset('assets/logo.png') }}" alt="Arthakara Logo" class="mx-auto object-contain">
+                <img src="{{ asset('assets/Logo.png') }}" alt="Arthakara Logo" class="mx-auto object-contain">
             </a>
         </div>
         <nav class="flex flex-col p-4 space-y-2 font-medium">
