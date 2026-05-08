@@ -2,190 +2,105 @@
 
 use App\Http\Controllers\CollectionWebController;
 use App\Http\Controllers\ColorWebController;
-use App\Http\Controllers\ImageController;
-use App\Http\Controllers\OrderController;
+use App\Http\Controllers\DashboardWebController;
 use App\Http\Controllers\OrderWebController;
-use App\Http\Controllers\ProductVariantController;
 use App\Http\Controllers\ProductVariantWebController;
 use App\Http\Controllers\ProductWebController;
 use App\Http\Controllers\ScentWebController;
 use App\Http\Controllers\StatusWebController;
-use App\Http\Controllers\TypeController;
 use App\Http\Controllers\TypeWebController;
-use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserWebController;
 use Illuminate\Support\Facades\Route;
-use Symfony\Component\Routing\Exception\RouteNotFoundException;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
 */
 
-/*
-|--------------------------------------------------------------------------
-| AUTHENTICATION ROUTES
-|--------------------------------------------------------------------------
-*/
+// Authentication Routes (Moved to /admin prefix for safety)
+Route::get('/admin/login', [UserWebController::class, 'showLoginForm'])->name('login');
+Route::post('/admin/login', [UserWebController::class, 'login'])->name('login.process');
+Route::post('/admin/logout', [UserWebController::class, 'logout'])->name('logout');
+Route::delete('/admin/logout', [UserWebController::class, 'logout']);
 
-Route::get('/login', function () {
-    return view('auth.login');
-})->name('login');
-
-Route::post('/login', [UserWebController::class, 'login'])->name('login.process');
-
-Route::post('/logout', [UserWebController::class, 'logout'])->name('logout');
-Route::delete('/logout', [UserWebController::class, 'logout']); // Support DELETE method too
-
-/*
-|--------------------------------------------------------------------------
-| ADMIN AREA - PROTECTED BY is_admin_web MIDDLEWARE
-|--------------------------------------------------------------------------
-*/
-
-Route::middleware(['is_admin_web'])->group(function() {
-
-    // Admin Dashboard Home
+// Admin Area - Protected by is_admin_web
+Route::middleware(['is_admin_web'])->prefix('admin')->group(function () {
+    
+    // Dashboard
     Route::get('/', function() {
         $totalOrder = \App\Models\Order::count();
         $totalProduct = \App\Models\Product::count();
         $totalIncome = \App\Models\Order::where('payment_status', 'paid')->sum('total_price');
-        
         return view('components.welcome', compact('totalOrder', 'totalProduct', 'totalIncome'));
     })->name('admin');
 
-    // Sensitive Management Routes (Moved from Public)
-    Route::get('/products', [ProductWebController::class, 'getProducts'])->name('products.index');
-    Route::get('/products/{productId}', [ProductWebController::class, 'showProductDetail'])->name('product.detail');
-    Route::get('/collections', [CollectionWebController::class, 'getCollections'])->name('collections.index');
-    Route::get('/collections/{collectionId}/products', [CollectionWebController::class, 'getProductsPerCollection'])->name('collections.products');
-    Route::get('/orders', [OrderWebController::class, 'showOrders'])->name('orders.index');
+    // Orders
+    Route::controller(OrderWebController::class)->group(function() {
+        Route::get('/orders', 'getOrders')->name('orders.index');
+        Route::get('/orders/{orderId}', 'showOrderDetail')->name('orders.detail');
+        Route::patch('/orders/{orderId}/status', 'updateStatus')->name('orders.updateStatus');
+        Route::patch('/orders/{orderId}/tracking', 'updateTracking')->name('orders.updateTracking');
+    });
 
-    // ADMIN PRODUCT VIEWS
-    Route::get('/products-view', function() {
-        return view('components.products.list_products');
-    })->name('products');
+    // Products
+    Route::controller(ProductWebController::class)->group(function() {
+        Route::get('/products', 'getProducts')->name('products.index');
+        Route::get('/products/create', function() {
+            return view('components.products.create_product');
+        })->name('products.create.form');
+        Route::post('/products/create', 'createProduct')->name('products.create');
+        Route::get('/products/{productId}', 'showProductDetail')->name('products.detail');
+        Route::get('/products/{productId}/edit', 'editProduct')->name('products.edit');
+        Route::put('/products/{productId}/update', 'updateProduct')->name('products.update');
+        Route::delete('/products/{productId}/delete', 'destroy')->name('products.delete');
+    });
 
-    Route::get('/create-product', function() {
-        return view('components.products.create_product');
-    })->name('create-product');
-
-    Route::get('/products/{productId}/edit-view', function($productId) {
-        return view('components.products.edit_product', ['productId' => $productId]);
-    })->name('edit-product');
-
-    Route::get('/detail-product', function() {
-        return view('components.products.detail_product');
-    })->name('detail-product');
-
-    Route::get('/products/{productId}/variants/create', [ProductVariantWebController::class, 'showCreateForm'])->name('variant.create.form');
-
-    Route::get('/detail-variant', function() {
-        return view('components.products.detail_product_variant');
-    })->name('detail-variant');
-
-    // ADMIN COLLECTION VIEWS
-    Route::get('/collections-view', function() {
-        return view('components.collections.list_collection');
-    })->name('collections');
-
-    Route::get('/create-collection', function() {
-        return view('components.collections.create_collection');
-    })->name('create-collection');
-
-    // ADMIN ORDER VIEWS
-    Route::get('/orders-view', function() {
-        return view('components.orders.list_orders');
-    })->name('orders');
-
-    Route::get('/detail-order', function() {
-        return view('components.orders.detail_order');
-    })->name('detail-order');
-
-    // ADMIN OTHER VIEWS
-    Route::get('/status-create', function() {
-        return view('components.other.components.status.create_status');
-    })->name('create-status');
-
-    Route::get('/type-create', function() {
-        return view('components.other.components.type.create_type');
-    })->name('create-type');
-
-    Route::get('/color-create', function() {
-        return view('components.other.components.color.create_color');
-    })->name('create-color');
-
-    Route::get('/scent-create', function() {
-        return view('components.other.components.scent.create_scent');
-    })->name('create-scent');
-
-    // ADMIN CONTROLLER ROUTES
-    Route::post('/image/upload', [ImageController::class, 'uploadImage'])->name('image.upload');
-
-    // Product Management
-    Route::post('/products/create', [ProductWebController::class, 'createProduct'])->name('products.create');
-    Route::get('/products/{productId}/edit', [ProductWebController::class, 'editProduct'])->name('products.edit');
-    Route::put('/products/{productId}/update', [ProductWebController::class, 'updateProduct'])->name('products.update');
-    Route::delete('/products/{productId}/delete', [ProductWebController::class, 'destroy'])->name('products.destroy');
-
-    // Collection Management
-    Route::post('/collections/create', [CollectionWebController::class, 'createCollection'])->name('collections.create');
-    Route::get('/collections/{collectionId}/edit', [CollectionWebController::class, 'editCollection'])->name('collections.edit');
-    Route::put('/collections/{collectionId}/update', [CollectionWebController::class, 'updateCollection'])->name('collections.update');
-    Route::delete('/collections/{collectionId}/delete', [CollectionWebController::class, 'deleteCollection'])->name('collections.delete');
-
-    // Order Management
-    Route::get('/orders/{orderId}', [OrderWebController::class, 'showDetail'])->name('order.detail');
-    Route::post('/orders/{orderId}/update-status', [OrderWebController::class, 'updateStatus'])->name('order.updateStatus');
-    Route::post('/orders/{orderId}/resend-wa', [OrderWebController::class, 'resendTrackingWA'])->name('order.resendWA');
-
-    // Product Variant Management
-    Route::post('/products/{productId}/variants/create', [ProductVariantWebController::class, 'createProductVariant'])->name('variant.create');
+    // Variants
     Route::patch('/products/{productId}/variants/{variantId}/update', [ProductVariantWebController::class, 'updateProductVariant'])->name('variant.update');
-    Route::delete('/products/{productId}/variants/{variantId}/delete', [ProductVariantWebController::class, 'deleteProductVariant'])->name('variant.delete');
-    
-    // Type Management
-    Route::controller(TypeWebController::class)->group(function() {
-        Route::post('/type/create', 'createType')->name('type.create');
-        Route::get('/type/get', 'getTypes')->name('type.get');
-        Route::get('/type/{typeId}/edit', 'showEditForm')->name('type.edit.form');
-        Route::put('/type/{typeId}/update', 'updateType')->name('type.update');
-        Route::delete('/type/{typeId}/delete', 'deleteType')->name('type.delete');
+
+    // Collections
+    Route::controller(CollectionWebController::class)->group(function() {
+        Route::get('/collections', 'getCollections')->name('collections.index');
+        Route::post('/collections/create', 'createCollection')->name('collections.create');
+        Route::get('/collections/{collectionId}/edit', 'showEditForm')->name('collections.edit.form');
+        Route::put('/collections/{collectionId}/update', 'updateCollection')->name('collections.update');
+        Route::delete('/collections/{collectionId}/delete', 'deleteCollection')->name('collections.delete');
     });
 
-    // Color Management
+    // Colors
     Route::controller(ColorWebController::class)->group(function() {
-        Route::post('/color/create', 'createColor')->name('color.create');
-        Route::get('/colors/get', 'getColors')->name('colors.get');
-        Route::get('/color/{colorId}/edit', 'showEditForm')->name('color.edit.form');
-        Route::put('/color/{colorId}/update', 'updateColor')->name('color.update');
-        Route::delete('/color/{colorId}/delete', 'deleteColor')->name('color.delete');
+        Route::get('/colors', 'getColors')->name('colors.get');
+        Route::post('/colors/create', 'createColor')->name('colors.create');
+        Route::get('/colors/{colorId}/edit', 'showEditForm')->name('color.edit.form');
+        Route::put('/colors/{colorId}/update', 'updateColor')->name('color.update');
+        Route::delete('/colors/{colorId}/delete', 'deleteColor')->name('color.delete');
     });
 
-    // Scent Management
+    // Scents
     Route::controller(ScentWebController::class)->group(function() {
-        Route::post('/scent/create', 'createScent')->name('scent.create');
-        Route::get('/scent/get', 'getScents')->name('scent.get');
-        Route::get('/scent/{scentId}/edit', 'showEditForm')->name('scent.edit.form');
-        Route::put('/scent/{scentId}/update', 'updateScent')->name('scent.update');
-        Route::delete('/scent/{scentId}/delete', 'deleteScent')->name('scent.delete');
-        Route::put('/scent/{scentId}/toggle', 'toggleStatus')->name('scent.toggle');
+        Route::get('/scents', 'getScents')->name('scent.get');
+        Route::post('/scents/create', 'createScent')->name('scents.create');
+        Route::get('/scents/{scentId}/edit', 'showEditForm')->name('scent.edit.form');
+        Route::put('/scents/{scentId}/update', 'updateScent')->name('scent.update');
+        Route::delete('/scents/{scentId}/delete', 'deleteScent')->name('scent.delete');
     });
 
-    // Status Management
+    // Types
+    Route::controller(TypeWebController::class)->group(function() {
+        Route::get('/types', 'getTypes')->name('type.get');
+        Route::post('/types/create', 'createType')->name('types.create');
+        Route::get('/types/{typeId}/edit', 'showEditForm')->name('type.edit.form');
+        Route::put('/types/{typeId}/update', 'updateType')->name('type.update');
+        Route::delete('/types/{typeId}/delete', 'deleteType')->name('type.delete');
+    });
+
+    // Statuses
     Route::controller(StatusWebController::class)->group(function() {
+        Route::get('/status', 'getStatuses')->name('status.get');
         Route::post('/status/create', 'createStatus')->name('status.create');
-        Route::get('/status/get', 'getStatuses')->name('status.get');
         Route::get('/status/{statusId}/edit', 'showEditForm')->name('status.edit.form');
         Route::put('/status/{statusId}/update', 'updateStatus')->name('status.update');
         Route::delete('/status/{statusId}/delete', 'deleteStatus')->name('status.delete');
     });
-
 });
-
