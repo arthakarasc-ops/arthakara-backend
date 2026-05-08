@@ -58,7 +58,7 @@ class ProductWebController extends Controller
                         'product_id' => $product->id,
                         'color_id' => $colorId,
                         'image_url' => $uploadedFileUrl,
-                        'stock' => $data['stock'] ?? 0,
+                        'stock' => $product->stock,
                     ]);
                 }
             }
@@ -108,29 +108,29 @@ class ProductWebController extends Controller
                 return redirect()->route('products.index')->with('error', 'Produk tidak ditemukan.');
             }
 
-            // Hapus isi keranjang (cart) yang memuat produk ini
-            \App\Models\CartItem::where('product_id', $product->id)->delete();
-
-            // Lepaskan relasi wangi (pivot)
-            $product->scents()->detach();
-
-            // Dapatkan semua variant ID sebelum dihapus
+            // Dapatkan semua variant ID
             $variantIds = $product->variants()->pluck('id')->toArray();
 
+            // 1. Hapus isi keranjang (cart) yang memuat varian produk ini
             if (!empty($variantIds)) {
-                // Nullify product_variant_id di order_items agar FK tidak gagal
+                \App\Models\CartItem::whereIn('product_variant_id', $variantIds)->delete();
+                
+                // 2. Nullify product_variant_id di order_items agar FK tidak gagal
                 // Data order tetap ada tapi variant-nya null (historical record)
                 \App\Models\OrderItem::whereIn('product_variant_id', $variantIds)
                     ->update(['product_variant_id' => null]);
-
-                // Hapus semua varian
+                
+                // 3. Hapus semua varian
                 $product->variants()->delete();
             }
 
-            // Hapus gambar produk
+            // 4. Lepaskan relasi wangi (pivot)
+            $product->scents()->detach();
+
+            // 5. Hapus gambar produk
             $product->productUsageImages()->delete();
 
-            // Hapus produk
+            // 6. Hapus produk
             $product->delete();
 
             return redirect()->route('products.index')->with('success', 'Produk berhasil dihapus.');
@@ -181,7 +181,11 @@ class ProductWebController extends Controller
                 'color_ids.*' => 'exists:colors,id',
                 'scent_ids' => 'nullable|array',
                 'scent_ids.*' => 'exists:scents,id',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5000'
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5000',
+                'variant_images' => 'nullable|array',
+                'variant_images.*' => 'image|mimes:jpeg,png,jpg,gif|max:5000',
+                'variant_stocks' => 'nullable|array',
+                'variant_stocks.*' => 'nullable|integer|min:0'
             ]);
 
             // Update basic product information
@@ -218,11 +222,35 @@ class ProductWebController extends Controller
             if ($request->has('color_ids') && !empty($request->color_ids)) {
                 // Hapus variant lama yang color-nya tidak dipilih
                 $product->variants()->whereNotIn('color_id', $request->color_ids)->delete();
-                // Tambah variant baru jika belum ada
+                
+                // Ambil gambar utama produk sebagai fallback
+                $mainImageUrl = $product->productUsageImages->first()->image_url ?? 'https://via.placeholder.com/150';
+
                 foreach ($request->color_ids as $colorId) {
-                    $product->variants()->firstOrCreate(
+                    $variantData = [];
+
+                    // Ambil stok spesifik varian jika ada, jika tidak gunakan stok umum produk
+                    if ($request->has("variant_stocks.{$colorId}") && $request->variant_stocks[$colorId] !== null) {
+                        $variantData['stock'] = $request->variant_stocks[$colorId];
+                    } else {
+                        $variantData['stock'] = $product->stock;
+                    }
+
+                    // Cek apakah ada upload gambar khusus untuk varian ini
+                    if ($request->hasFile("variant_images.{$colorId}")) {
+                        $variantUploadResponse = Cloudinary::upload($request->file("variant_images.{$colorId}")->getRealPath());
+                        $variantData['image_url'] = $variantUploadResponse->getSecurePath();
+                    } else {
+                        // Jika tidak ada upload baru, pastikan ada image_url (fallback ke main image jika baru dibuat)
+                        $existingVariant = $product->variants()->where('color_id', $colorId)->first();
+                        if (!$existingVariant) {
+                            $variantData['image_url'] = $mainImageUrl;
+                        }
+                    }
+
+                    $product->variants()->updateOrCreate(
                         ['color_id' => $colorId],
-                        ['image_url' => $product->productUsageImages->first()->image_url ?? 'https://via.placeholder.com/150', 'stock' => 0]
+                        $variantData
                     );
                 }
             } else {

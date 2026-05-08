@@ -143,7 +143,6 @@ class ProductController extends Controller
                     return [
                         'id' => $v->id,
                         'color' => optional($v->color)->name,
-                        'color_hex' => optional($v->color)->hex_code,
                         'stock' => $v->stock ?? 0,
                     ];
                 })->values(),

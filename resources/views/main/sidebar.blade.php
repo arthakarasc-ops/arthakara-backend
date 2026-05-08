@@ -1,4 +1,4 @@
-<aside class="w-64 bg-white shadow-md flex flex-col justify-between h-full flex-shrink-0 border-r border-slate-100 relative z-20">
+<aside class="w-64 bg-white shadow-xl lg:shadow-md flex flex-col justify-between h-full flex-shrink-0 border-r border-slate-100 relative z-20">
     <div class="overflow-y-auto flex-1 custom-scrollbar">
         <div class="p-6 text-center">
             <a href="{{ route('admin') }}">

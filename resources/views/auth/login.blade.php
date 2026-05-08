@@ -4,52 +4,109 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <title>Roccia Admin - Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <title>Arthakara — Admin Access</title>
+    <style>
+        body { font-family: 'Outfit', sans-serif; }
+        .glass {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .input-focus-glow:focus {
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.1);
+        }
+    </style>
 </head>
-<body>
-    <div class="flex justify-center items-center min-h-screen bg-gray-100">
-        <div class="w-full max-w-md py-14 px-11 bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-shadow duration-300 ease-in-out">
-            <h2 class="text-3xl font-bold text-gray-800 mb-11 text-center">Masuk ke Akun Admin Arthakara</h2>
+<body class="bg-[#0c0c0e] text-slate-200 antialiased overflow-hidden">
+    <!-- Abstract Background Elements -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-cyan-500/5 rounded-full blur-[120px]"></div>
+        <div class="absolute -bottom-[10%] -right-[10%] w-[50%] h-[50%] bg-blue-600/5 rounded-full blur-[120px]"></div>
+    </div>
 
-            @if(session('success'))
-                <div class="mb-4 text-green-600">{{ session('success') }}</div>
-            @endif
-
-            @if($errors->any())
-                <div class="mb-4 text-red-600">
-                    @foreach($errors->all() as $error)
-                        <div>{{ $error }}</div>
-                    @endforeach
+    <main class="relative min-h-screen flex items-center justify-center p-6">
+        <div class="w-full max-w-5xl grid lg:grid-cols-2 gap-16 items-center">
+            
+            <!-- Left Side: Branding -->
+            <div class="hidden lg:block space-y-8 animate-in fade-in slide-in-from-left duration-1000">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-400">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                    </span>
+                    Administrative Portal
                 </div>
-            @endif
+                <h1 class="text-8xl font-extrabold tracking-tighter leading-none text-white">
+                    Artha <br> <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Kara.</span>
+                </h1>
+                <p class="text-slate-400 text-lg max-w-md leading-relaxed font-light">
+                    Elevating your storefront management with precision and elegance. Authenticate to proceed.
+                </p>
+                <div class="flex gap-4 pt-4">
+                    <div class="w-12 h-[1px] bg-slate-800 self-center"></div>
+                    <span class="text-slate-500 text-xs uppercase tracking-widest font-semibold italic">Since 2024</span>
+                </div>
+            </div>
 
-            <form action="{{ route('login.process') }}" method="POST">
-                @csrf
-                <label for="email-address-icon" class="block mb-2 text-sm font-medium text-gray-900">Email Admin</label>
-                <div class="relative mb-6">
-                    <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
-                        <svg class="w-4 h-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 16">
-                            <path d="m10.036 8.278 9.258-7.79A1.979 1.979 0 0 0 18 0H2A1.987 1.987 0 0 0 .641.541l9.395 7.737Z"/>
-                            <path d="M11.241 9.817c-.36.275-.801.425-1.255.427-.428 0-.845-.138-1.187-.395L0 2.6V14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2.5l-8.759 7.317Z"/>
-                        </svg>
+            <!-- Right Side: Login Form -->
+            <div class="w-full max-w-md mx-auto lg:ml-auto animate-in fade-in slide-in-from-right duration-1000">
+                <div class="glass p-8 sm:p-12 rounded-[40px] shadow-2xl relative overflow-hidden group">
+                    <!-- Subtle inner glow -->
+                    <div class="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none"></div>
+
+                    <div class="relative z-10 space-y-8">
+                        <div class="space-y-2">
+                            <h2 class="text-2xl font-bold text-white tracking-tight">Sign In</h2>
+                            <p class="text-slate-500 text-sm">Enter your credentials to access the terminal.</p>
+                        </div>
+
+                        @if($errors->any())
+                            <div class="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl">
+                                @foreach($errors->all() as $error)
+                                    <p class="text-rose-400 text-xs font-medium">{{ $error }}</p>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        <form action="{{ route('login.process') }}" method="POST" class="space-y-6">
+                            @csrf
+                            <div class="space-y-2">
+                                <label for="email" class="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Identity (Email)</label>
+                                <div class="relative group">
+                                    <input type="email" name="email" id="email" required
+                                        class="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-6 text-white placeholder-slate-600 outline-none focus:border-cyan-500/50 focus:bg-white/[0.05] transition-all input-focus-glow"
+                                        placeholder="admin@arthakara.com">
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label for="password" class="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Secret Key (Password)</label>
+                                <input type="password" name="password" id="password" required
+                                    class="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-6 text-white placeholder-slate-600 outline-none focus:border-cyan-500/50 focus:bg-white/[0.05] transition-all input-focus-glow"
+                                    placeholder="••••••••">
+                            </div>
+
+                            <button type="submit" 
+                                class="w-full bg-white text-black font-bold py-5 rounded-2xl hover:bg-cyan-400 hover:text-black transition-all duration-300 transform active:scale-[0.98] shadow-lg shadow-white/5">
+                                Authorize Access
+                            </button>
+                        </form>
+
+                        <div class="pt-4 text-center">
+                            <p class="text-[10px] text-slate-600 font-bold uppercase tracking-[0.2em]">Protected by Arthakara Security</p>
+                        </div>
                     </div>
-                    <input type="email" name="email" id="email-address-icon" placeholder="admin@arthakara.com" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5">
                 </div>
+            </div>
+        </div>
+    </main>
 
-                <label for="password" class="block mb-2 text-sm font-medium text-gray-900">Password Admin</label>
-                <div class="relative mb-6">
-                    <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
-                        <svg class="w-4 h-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14v3m-3-6V7a3 3 0 0 1 6 0v4m-8 0h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1Z"/>
-                        </svg>
-                    </div>
-                    <input type="password" name="password" id="password" placeholder="Masukkan password" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5">
-                </div>
-                
-                <button type="submit" class="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors duration-200">
-                    Masuk
-                </button>
-            </form>
+    <!-- Footer Decoration -->
+    <div class="fixed bottom-12 left-12 hidden lg:block">
+        <div class="flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></div>
+            <span class="text-[10px] font-bold text-slate-700 tracking-widest uppercase">System Operational</span>
         </div>
     </div>
 </body>

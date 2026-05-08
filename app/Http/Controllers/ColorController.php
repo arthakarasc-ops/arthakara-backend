@@ -46,7 +46,6 @@ class ColorController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'hex_code' => 'nullable|string|max:7',
         ]);
 
         $color = Color::create($validated);
@@ -58,7 +57,6 @@ class ColorController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'hex_code' => 'nullable|string|max:7',
         ]);
 
         $color->update($validated);

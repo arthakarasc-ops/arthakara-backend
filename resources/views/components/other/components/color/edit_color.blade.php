@@ -34,17 +34,7 @@
             @enderror
         </div>
 
-        <div class="mb-6">
-            <label class="block text-gray-700 font-semibold mb-2">Hex Code</label>
-            <div class="flex items-center gap-3">
-                <input type="color" value="{{ old('hex_code', $color->hex_code ?? '#000000') }}" class="h-10 w-10 cursor-pointer rounded border-0" disabled>
-                <input type="text" name="hex_code" value="{{ old('hex_code', $color->hex_code) }}" class="w-full p-2 border rounded font-mono focus:outline-none focus:border-blue-500 @error('hex_code') border-red-500 @enderror" placeholder="#000000">
-            </div>
-            <small class="text-gray-500">Isi dengan format hex, misalnya #FFFFFF. Kosongkan jika tidak ada hex.</small>
-            @error('hex_code')
-                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-            @enderror
-        </div>
+
 
         <div class="flex justify-end gap-3">
             <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 font-medium transition duration-200">Save Changes</button>

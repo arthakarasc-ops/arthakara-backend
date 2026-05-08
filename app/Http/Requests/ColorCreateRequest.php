@@ -24,7 +24,6 @@ class ColorCreateRequest extends FormRequest
     {
         return [
             'name' => ['required', 'max:50'],
-            'hex_code' => ['required', 'max:7']
         ];
     }
 

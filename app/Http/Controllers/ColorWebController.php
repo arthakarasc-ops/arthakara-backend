@@ -16,7 +16,6 @@ class ColorWebController extends Controller
 
             Color::create([
                 'name'     => $data['name'],
-                'hex_code' => $data['hex_code'] ?? null,
             ]);
 
             return redirect()->route('colors.get')->with('success', 'Warna berhasil dibuat!');
@@ -43,7 +42,6 @@ class ColorWebController extends Controller
         try {
             $validated = $request->validate([
                 'name'     => 'required|string|max:255',
-                'hex_code' => 'nullable|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
             ]);
 
             $color = Color::findOrFail($colorId);

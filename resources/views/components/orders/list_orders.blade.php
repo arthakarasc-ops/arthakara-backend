@@ -1,65 +1,69 @@
 @extends('main.main')
 
 @section('content')
+<div class="space-y-8">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900">Orders</h1>
+            <p class="text-slate-500 text-sm">Monitor and manage your store transactions</p>
+        </div>
 
-<div class="container mx-auto px-6 py-10">
-    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6">
-        <h1 class="text-4xl font-bold text-gray-800 mb-4 sm:mb-0">My Orders</h1>
-
-        <form method="GET" action="{{ route('orders.index') }}" class="relative w-full sm:w-auto">
-            <select id="collection-filter" name="status_id" onchange="this.form.submit()"
-                    class="block appearance-none w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-blue-500 shadow">
-                <option value="">All statuses</option>
+        <form method="GET" action="{{ route('orders.index') }}" class="w-full sm:w-auto">
+            <select name="status_id" onchange="this.form.submit()"
+                    class="w-full sm:w-56 bg-white border border-slate-200 text-slate-700 py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 shadow-sm transition-all cursor-pointer">
+                <option value="">All Statuses</option>
                 @foreach($statuses as $status)
                     <option value="{{ $status->id }}" {{ $selectedStatusId == $status->id ? 'selected' : '' }}>
                         {{ ucfirst($status->name) }}
                     </option>
                 @endforeach
             </select>
-            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                <svg class="fill-current h-4 w-4" viewBox="0 0 20 20">
-                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-                </svg>
-            </div>
         </form>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         @forelse($orders as $order)
-            <div class="bg-white rounded-xl shadow hover:shadow-lg transition duration-300 overflow-hidden flex flex-col">
-                <div class="p-6 flex-grow flex flex-col gap-3">
-                    <h2 class="text-xl font-bold text-gray-700">#{{ $order->id }}</h2>
-                    <p class="text-gray-600 font-medium">{{ $order->users->email ?? 'Unknown user' }}</p>
-                    <p class="text-gray-400 text-sm">{{ \Carbon\Carbon::parse($order->created_at)->format('d-m-Y') }}</p>
+            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col group">
+                <div class="p-6 flex-grow flex flex-col">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-cyan-50 group-hover:text-cyan-600 transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                        </div>
+                        <span class="text-xs font-bold text-slate-400">#{{ $order->id }}</span>
+                    </div>
 
-                    <div class="flex items-center gap-2 mt-1">
-                        <span class="bg-red-100 text-red-800 text-xs font-medium px-3 py-1 rounded-full border border-red-400 w-fit">
-                            {{ ucfirst($order->statuses->name) }}
+                    <h3 class="font-bold text-slate-900 line-clamp-1 mb-1">{{ $order->users->email ?? 'Guest Customer' }}</h3>
+                    <p class="text-xs text-slate-400 mb-4">{{ \Carbon\Carbon::parse($order->created_at)->format('d M Y, H:i') }}</p>
+
+                    <div class="flex flex-wrap gap-2 mt-auto">
+                        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-cyan-50 text-cyan-700 border border-cyan-100">
+                            {{ $order->statuses->name ?? 'Pending' }}
                         </span>
                         
                         @if($order->shippingMethods && $order->shippingMethods->name === 'Take Away')
-                            <span class="bg-amber-100 text-amber-800 text-xs font-medium px-3 py-1 rounded-full border border-amber-400 w-fit">
+                            <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-100">
                                 Take Away
                             </span>
                         @else
-                            <span class="bg-indigo-100 text-indigo-800 text-xs font-medium px-3 py-1 rounded-full border border-indigo-400 w-fit">
+                            <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-100">
                                 Delivery
                             </span>
                         @endif
                     </div>
                 </div>
 
-                <div class="p-4 pt-0">
-                    <form action="{{ route('order.detail', ['orderId' => $order->id]) }}" method="GET">
-                        <button type="submit"
-                                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded transition focus:ring-2 ring-blue-500">
-                            See Detail
-                        </button>
-                    </form>
+                <div class="p-4 bg-slate-50/50 border-t border-slate-50">
+                    <a href="{{ route('order.detail', ['orderId' => $order->id]) }}"
+                       class="w-full bg-white hover:bg-slate-900 hover:text-white text-slate-600 font-bold py-2.5 rounded-xl transition-all duration-300 text-center flex items-center justify-center gap-2 text-sm shadow-sm">
+                        View Detail
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    </a>
                 </div>
             </div>
         @empty
-            <p class="text-gray-500 col-span-full text-center">No orders found.</p>
+            <div class="col-span-full py-20 text-center bg-white rounded-3xl border border-dashed border-slate-200">
+                <p class="text-slate-400 font-medium">No orders found.</p>
+            </div>
         @endforelse
     </div>
 </div>

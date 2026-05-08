@@ -30,15 +30,7 @@
             @enderror
         </div>
 
-        <!-- Collection Hex -->
-        <div class="mb-4">
-            <label class="block text-gray-700 font-semibold mb-2">Color Hex</label>
-            <input type="text" name="hex_code" value="{{ old('hex_code') }}"
-                class="w-full p-2 border rounded @error('hex_code') border-red-500 @enderror" required placeholder="#000000">
-            @error('hex_code')
-                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-            @enderror
-        </div>
+
 
         <!-- Submit Button -->
         <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Create Color</button>

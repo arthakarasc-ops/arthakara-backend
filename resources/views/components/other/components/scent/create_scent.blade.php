@@ -1,49 +1,41 @@
 @extends('main.main')
 
 @section('content')
-<div class="max-w-2xl mx-auto mt-10">
-    <h1 class="text-2xl font-bold mb-6">Create New Scent (Wangi)</h1>
+<div class="max-w-xl mx-auto">
+    <div class="mb-8">
+        <a href="{{ route('scent.get') }}" class="text-slate-500 hover:text-cyan-600 transition-colors flex items-center gap-2 mb-4 group">
+            <svg class="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Back to Scents
+        </a>
+        <h1 class="text-3xl font-bold text-slate-900">New Scent</h1>
+        <p class="text-slate-500">Add a new aromatic option for your products.</p>
+    </div>
 
-    @if(session('success'))
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded mb-4">
-            {{ session('success') }}
-        </div>
-    @endif
-
-        <!-- Error Message -->
-    @if(session('error'))
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
-            {{ session('error') }}
-        </div>
-    @endif
-
-    <form id="scent-form" action="{{ route('scent.create') }}" method="POST">
+    <form id="scent-form" action="{{ route('scent.create') }}" method="POST" class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
         @csrf
 
-        <!-- Scent Name -->
-        <div class="mb-4">
-            <label class="block text-gray-700 font-semibold mb-2">Scent Name</label>
+        <div>
+            <label class="block text-slate-700 font-semibold mb-2">Scent Name</label>
             <input type="text" name="name" value="{{ old('name') }}"
-                class="w-full p-2 border rounded @error('name') border-red-500 @enderror" required placeholder="Contoh: Vanilla">
-            @error('name')
-                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-            @enderror
+                class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none @error('name') border-red-500 @enderror" required placeholder="e.g. Vanilla Dream">
+            @error('name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
-        <!-- Extra Price -->
-        <div class="mb-4">
-            <label class="block text-gray-700 font-semibold mb-2">Extra Price (Rp)</label>
-            <input type="number" name="extra_price" value="{{ old('extra_price', 0) }}" min="0"
-                class="w-full p-2 border rounded @error('extra_price') border-red-500 @enderror" required>
-            <small class="text-gray-500">Biarkan 0 jika tidak ada harga tambahan untuk wangi ini.</small>
-            @error('extra_price')
-                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-            @enderror
+        <div>
+            <label class="block text-slate-700 font-semibold mb-2">Extra Price (Rp)</label>
+            <div class="relative">
+                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
+                <input type="number" name="extra_price" value="{{ old('extra_price', 0) }}" min="0"
+                    class="w-full p-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none @error('extra_price') border-red-500 @enderror" required>
+            </div>
+            <p class="text-[10px] text-slate-400 mt-2 italic">Set to 0 if there is no additional cost for this scent.</p>
+            @error('extra_price') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
-        <!-- Submit Button -->
-        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Create Scent</button>
-
+        <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-cyan-500/20 transition-all duration-300">
+            Create Scent
+        </button>
     </form>
 </div>
 @endsection
+

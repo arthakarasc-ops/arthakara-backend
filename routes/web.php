@@ -45,23 +45,6 @@ Route::delete('/logout', [UserWebController::class, 'logout']); // Support DELET
 
 /*
 |--------------------------------------------------------------------------
-| PUBLIC ROUTES
-|--------------------------------------------------------------------------
-*/
-
-// Public product routes
-Route::get('/products', [ProductWebController::class, 'getProducts'])->name('products.index');
-Route::get('/products/{productId}', [ProductWebController::class, 'showProductDetail'])->name('product.detail');
-
-// Public collection routes
-Route::get('/collections', [CollectionWebController::class, 'getCollections'])->name('collections.index');
-Route::get('/collections/{collectionId}/products', [CollectionWebController::class, 'getProductsPerCollection'])->name('collections.products');
-
-// Public order routes
-Route::get('/orders', [OrderWebController::class, 'showOrders'])->name('orders.index');
-
-/*
-|--------------------------------------------------------------------------
 | ADMIN AREA - PROTECTED BY is_admin_web MIDDLEWARE
 |--------------------------------------------------------------------------
 */
@@ -76,6 +59,13 @@ Route::middleware(['is_admin_web'])->group(function() {
         
         return view('components.welcome', compact('totalOrder', 'totalProduct', 'totalIncome'));
     })->name('admin');
+
+    // Sensitive Management Routes (Moved from Public)
+    Route::get('/products', [ProductWebController::class, 'getProducts'])->name('products.index');
+    Route::get('/products/{productId}', [ProductWebController::class, 'showProductDetail'])->name('product.detail');
+    Route::get('/collections', [CollectionWebController::class, 'getCollections'])->name('collections.index');
+    Route::get('/collections/{collectionId}/products', [CollectionWebController::class, 'getProductsPerCollection'])->name('collections.products');
+    Route::get('/orders', [OrderWebController::class, 'showOrders'])->name('orders.index');
 
     // ADMIN PRODUCT VIEWS
     Route::get('/products-view', function() {
