@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\CollectionWebController;
 use App\Http\Controllers\ColorWebController;
-use App\Http\Controllers\DashboardWebController;
 use App\Http\Controllers\OrderWebController;
 use App\Http\Controllers\ProductVariantWebController;
 use App\Http\Controllers\ProductWebController;
@@ -12,15 +11,15 @@ use App\Http\Controllers\TypeWebController;
 use App\Http\Controllers\UserWebController;
 use Illuminate\Support\Facades\Route;
 
-// Redirect old login path to new admin login path
-Route::redirect('/login', '/admin/login');
-Route::redirect('/', '/admin');
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
 */
+
+// Redirect old login path to new admin login path
+Route::redirect('/login', '/admin/login');
+Route::redirect('/', '/admin');
 
 // Authentication Routes (Moved to /admin prefix for safety)
 Route::get('/admin/login', function () {
@@ -34,7 +33,7 @@ Route::delete('/admin/logout', [UserWebController::class, 'logout']);
 // Admin Area - Protected by is_admin_web
 Route::middleware(['is_admin_web'])->prefix('admin')->group(function () {
     
-    // Dashboard
+    // Dashboard Home
     Route::get('/', function() {
         $totalOrder = \App\Models\Order::count();
         $totalProduct = \App\Models\Product::count();
@@ -89,7 +88,7 @@ Route::middleware(['is_admin_web'])->prefix('admin')->group(function () {
         Route::get('/scents', 'getScents')->name('scent.get');
         Route::post('/scents/create', 'createScent')->name('scents.create');
         Route::get('/scents/{scentId}/edit', 'showEditForm')->name('scent.edit.form');
-        Route::put('/scents/{scentId}/update', 'updateScent')->name('scent.update');
+        Route::put('/scents/{scentId}/update', 'updateScent')->name('scents.update');
         Route::delete('/scents/{scentId}/delete', 'deleteScent')->name('scent.delete');
     });
 
