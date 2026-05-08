@@ -12,6 +12,10 @@ use App\Http\Controllers\TypeWebController;
 use App\Http\Controllers\UserWebController;
 use Illuminate\Support\Facades\Route;
 
+// Redirect old login path to new admin login path
+Route::redirect('/login', '/admin/login');
+Route::redirect('/', '/admin');
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
