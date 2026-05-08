@@ -23,7 +23,10 @@ Route::redirect('/', '/admin');
 */
 
 // Authentication Routes (Moved to /admin prefix for safety)
-Route::get('/admin/login', [UserWebController::class, 'showLoginForm'])->name('login');
+Route::get('/admin/login', function () {
+    return view('auth.login');
+})->name('login');
+
 Route::post('/admin/login', [UserWebController::class, 'login'])->name('login.process');
 Route::post('/admin/logout', [UserWebController::class, 'logout'])->name('logout');
 Route::delete('/admin/logout', [UserWebController::class, 'logout']);
