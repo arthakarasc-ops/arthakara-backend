@@ -30,7 +30,7 @@ class ShippingMethodWebController extends Controller
 
             ShippingMethod::create($validated);
 
-            return redirect()->route('shipping.index')->with('success', 'Metode pengiriman berhasil ditambahkan!');
+            return redirect()->route('shippings.index')->with('success', 'Metode pengiriman berhasil ditambahkan!');
         } catch (\Exception $ex) {
             Log::error('Shipping creation failed: ' . $ex->getMessage());
             return redirect()->back()->with('error', 'Gagal menambah pengiriman.')->withInput();
@@ -55,7 +55,7 @@ class ShippingMethodWebController extends Controller
             $shipping = ShippingMethod::findOrFail($id);
             $shipping->update($validated);
 
-            return redirect()->route('shipping.index')->with('success', 'Metode pengiriman berhasil diperbarui!');
+            return redirect()->route('shippings.index')->with('success', 'Metode pengiriman berhasil diperbarui!');
         } catch (\Exception $ex) {
             Log::error('Shipping update failed: ' . $ex->getMessage());
             return redirect()->back()->with('error', 'Gagal memperbarui pengiriman.')->withInput();
@@ -73,7 +73,7 @@ class ShippingMethodWebController extends Controller
             }
 
             $shipping->delete();
-            return redirect()->route('shipping.index')->with('success', 'Metode pengiriman berhasil dihapus!');
+            return redirect()->route('shippings.index')->with('success', 'Metode pengiriman berhasil dihapus!');
         } catch (\Exception $ex) {
             Log::error('Shipping deletion failed: ' . $ex->getMessage());
             return redirect()->back()->with('error', 'Gagal menghapus pengiriman.');

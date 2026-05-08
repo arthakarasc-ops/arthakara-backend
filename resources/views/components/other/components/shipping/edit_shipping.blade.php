@@ -3,7 +3,7 @@
 @section('content')
 <div class="max-w-2xl mx-auto">
     <div class="mb-8 text-center sm:text-left">
-        <a href="{{ route('shipping.index') }}" class="inline-flex items-center gap-2 text-slate-500 hover:text-cyan-600 transition-colors mb-4 group text-sm">
+        <a href="{{ route('shippings.index') }}" class="inline-flex items-center gap-2 text-slate-500 hover:text-cyan-600 transition-colors mb-4 group text-sm">
             <svg class="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
             Back to Shipping Methods
         </a>
@@ -17,7 +17,7 @@
         </div>
     @endif
 
-    <form action="{{ route('shipping.update', $shipping->id) }}" method="POST" class="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm space-y-6">
+    <form action="{{ route('shippings.update', $shipping->id) }}" method="POST" class="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm space-y-6">
         @csrf
         @method('PUT')
         

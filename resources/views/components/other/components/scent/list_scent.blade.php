@@ -7,7 +7,7 @@
             <h1 class="text-3xl font-bold text-slate-900">Scents & Aromas</h1>
             <p class="text-slate-500 text-sm">Manage scent options and extra pricing</p>
         </div>
-        <a href="{{ route('create-scent') }}" class="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-md">
+        <a href="{{ route('scents.create.form') }}" class="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-md">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
             Add New Scent
         </a>
@@ -42,12 +42,12 @@
                 </div>
 
                 <div class="grid grid-cols-3 gap-2">
-                    <a href="{{ route('scent.edit.form', ['scentId' => $scent->id]) }}" class="bg-slate-50 hover:bg-cyan-50 text-slate-600 hover:text-cyan-700 py-2.5 rounded-xl text-center text-sm font-bold transition-all flex items-center justify-center gap-1">
+                    <a href="{{ route('scents.edit.form', ['scentId' => $scent->id]) }}" class="bg-slate-50 hover:bg-cyan-50 text-slate-600 hover:text-cyan-700 py-2.5 rounded-xl text-center text-sm font-bold transition-all flex items-center justify-center gap-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                         Edit
                     </a>
                     
-                    <form action="{{ route('scent.toggle', ['scentId' => $scent->id]) }}" method="POST" class="w-full">
+                    <form action="{{ route('scents.toggle', ['scentId' => $scent->id]) }}" method="POST" class="w-full">
                         @csrf
                         @method('PUT')
                         <button type="submit" class="w-full py-2.5 rounded-xl text-center text-sm font-bold transition-all flex items-center justify-center gap-1 {{ $scent->is_active ? 'bg-slate-50 hover:bg-orange-50 text-slate-600 hover:text-orange-600' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm' }}">
@@ -61,7 +61,7 @@
                         </button>
                     </form>
 
-                    <form action="{{ route('scent.delete', ['scentId' => $scent->id]) }}" method="post" onsubmit="return confirm('Apakah Anda yakin ingin menghapus wangi ini?');" class="w-full">
+                    <form action="{{ route('scents.delete', ['scentId' => $scent->id]) }}" method="post" onsubmit="return confirm('Apakah Anda yakin ingin menghapus wangi ini?');" class="w-full">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="w-full bg-slate-50 hover:bg-red-50 text-slate-600 hover:text-red-700 py-2.5 rounded-xl text-center text-sm font-bold transition-all flex items-center justify-center">

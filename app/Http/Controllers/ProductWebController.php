@@ -228,8 +228,13 @@ class ProductWebController extends Controller
 
             // 🔥 Sync colors via ProductVariant
             if ($request->has('color_ids') && !empty($request->color_ids)) {
-                // Hapus variant lama yang color-nya tidak dipilih
-                $product->variants()->whereNotIn('color_id', $request->color_ids)->delete();
+                // Hapus variant lama yang color-nya tidak dipilih (dan bersihkan keranjang)
+                $variantsToDelete = $product->variants()->whereNotIn('color_id', $request->color_ids)->get();
+                foreach ($variantsToDelete as $v) {
+                    \App\Models\CartItem::where('product_variant_id', $v->id)->delete();
+                    \App\Models\OrderItem::where('product_variant_id', $v->id)->update(['product_variant_id' => null]);
+                    $v->delete();
+                }
                 
                 // Ambil gambar utama produk sebagai fallback
                 $mainImageUrl = $product->productUsageImages->first()->image_url ?? 'https://via.placeholder.com/150';

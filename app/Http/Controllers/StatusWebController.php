@@ -16,7 +16,7 @@ class StatusWebController extends Controller
             $collection = new Status($data);
             $collection->save();
 
-            return redirect()->route('status.get')->with('success', 'Status created successfully!');
+            return redirect()->route('statuses.index')->with('success', 'Status created successfully!');
         } catch (\Exception $ex) {
             Log::error('Status creation failed: ' . $ex->getMessage());
             return redirect()->back()->with('error', 'Failed to create status. Please try again.');
@@ -43,7 +43,7 @@ class StatusWebController extends Controller
             $status = Status::findOrFail($statusId);
             $status->update($validated);
 
-            return redirect()->route('status.get')->with('success', 'Status updated successfully!');
+            return redirect()->route('statuses.index')->with('success', 'Status updated successfully!');
         } catch (\Exception $ex) {
             Log::error('Status update failed: ' . $ex->getMessage());
             return redirect()->back()->with('error', 'Failed to update status.');
@@ -54,7 +54,7 @@ class StatusWebController extends Controller
         $status = Status::findOrFail($statusId);
         $status->delete();
 
-        return redirect()->route('status.get')->with('success', 'Status deleted!');
+        return redirect()->route('statuses.index')->with('success', 'Status deleted!');
     }
 }
 

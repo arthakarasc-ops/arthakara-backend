@@ -30,7 +30,7 @@
                 Update Status & Pengiriman
             </h2>
         </div>
-        <form action="{{ route('order.updateStatus', $order->id) }}" method="POST" class="p-6">
+        <form action="{{ route('orders.updateStatus', $order->id) }}" method="POST" class="p-6">
             @csrf
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
@@ -84,7 +84,7 @@
     </div>
 
     @if($order->tracking_number)
-    <form id="resend-wa-form" action="{{ route('order.resendWA', $order->id) }}" method="POST" class="hidden">
+    <form id="resend-wa-form" action="{{ route('orders.resendWA', $order->id) }}" method="POST" class="hidden">
         @csrf
     </form>
     @endif

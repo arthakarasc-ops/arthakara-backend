@@ -17,7 +17,7 @@ class TypeWebController extends Controller
             $collection = new Type($data);
             $collection->save();
 
-            return redirect()->route('type.get')->with('success', 'Type created successfully!');
+            return redirect()->route('types.index')->with('success', 'Type created successfully!');
         } catch (\Exception $ex) {
             Log::error('Collection creation failed: ' . $ex->getMessage());
             return redirect()->back()->with('error', 'Failed to create type. Please try again.');
@@ -44,7 +44,7 @@ class TypeWebController extends Controller
             $type = Type::findOrFail($typeId);
             $type->update($validated);
 
-            return redirect()->route('type.get')->with('success', 'Type updated successfully!');
+            return redirect()->route('types.index')->with('success', 'Type updated successfully!');
         } catch (\Exception $ex) {
             Log::error('Type update failed: ' . $ex->getMessage());
             return redirect()->back()->with('error', 'Failed to update type.');
@@ -55,7 +55,7 @@ class TypeWebController extends Controller
         $type = Type::findOrFail($typeId);
         $type->delete();
 
-        return redirect()->route('type.get')->with('success', 'Type deleted!');
+        return redirect()->route('types.index')->with('success', 'Type deleted!');
     }
 }
 

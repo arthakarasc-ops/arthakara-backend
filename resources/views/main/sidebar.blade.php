@@ -27,19 +27,19 @@
                 <p class="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Attributes</p>
             </div>
 
-            <a href="{{ route('colors.get') }}" class="flex items-center px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('colors.*') ? 'bg-cyan-600 text-white shadow-md shadow-cyan-500/30' : 'text-slate-600 hover:bg-slate-100 hover:text-cyan-600' }}">
+            <a href="{{ route('colors.index') }}" class="flex items-center px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('colors.*') ? 'bg-cyan-600 text-white shadow-md shadow-cyan-500/30' : 'text-slate-600 hover:bg-slate-100 hover:text-cyan-600' }}">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path></svg>
                 Colors
             </a>
-            <a href="{{ route('scent.get') }}" class="flex items-center px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('scent.*') ? 'bg-cyan-600 text-white shadow-md shadow-cyan-500/30' : 'text-slate-600 hover:bg-slate-100 hover:text-cyan-600' }}">
+            <a href="{{ route('scents.index') }}" class="flex items-center px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('scents.*') ? 'bg-cyan-600 text-white shadow-md shadow-cyan-500/30' : 'text-slate-600 hover:bg-slate-100 hover:text-cyan-600' }}">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 Scents
             </a>
-            <a href="{{ route('type.get') }}" class="flex items-center px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('type.*') ? 'bg-cyan-600 text-white shadow-md shadow-cyan-500/30' : 'text-slate-600 hover:bg-slate-100 hover:text-cyan-600' }}">
+            <a href="{{ route('types.index') }}" class="flex items-center px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('types.*') ? 'bg-cyan-600 text-white shadow-md shadow-cyan-500/30' : 'text-slate-600 hover:bg-slate-100 hover:text-cyan-600' }}">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
                 Types
             </a>
-            <a href="{{ route('status.get') }}" class="flex items-center px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('status.*') ? 'bg-cyan-600 text-white shadow-md shadow-cyan-500/30' : 'text-slate-600 hover:bg-slate-100 hover:text-cyan-600' }}">
+            <a href="{{ route('statuses.index') }}" class="flex items-center px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('statuses.*') ? 'bg-cyan-600 text-white shadow-md shadow-cyan-500/30' : 'text-slate-600 hover:bg-slate-100 hover:text-cyan-600' }}">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 Statuses
             </a>

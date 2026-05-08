@@ -7,7 +7,7 @@
             <h1 class="text-3xl font-bold text-slate-900">Colors</h1>
             <p class="text-slate-500 text-sm">Manage product color attributes</p>
         </div>
-        <a href="{{ route('create-color') }}" class="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-md">
+        <a href="{{ route('colors.create.form') }}" class="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-md">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
             Add New Color
         </a>
@@ -27,10 +27,10 @@
                 </div>
                 
                 <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 lg:opacity-100">
-                    <a href="{{ route('color.edit.form', ['colorId' => $color->id]) }}" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
+                    <a href="{{ route('colors.edit.form', ['colorId' => $color->id]) }}" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                     </a>
-                    <form action="{{ route('color.delete', ['colorId' => $color->id]) }}" method="post" onsubmit="return confirm('Apakah Anda yakin ingin menghapus warna ini?');">
+                    <form action="{{ route('colors.delete', ['colorId' => $color->id]) }}" method="post" onsubmit="return confirm('Apakah Anda yakin ingin menghapus warna ini?');">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">

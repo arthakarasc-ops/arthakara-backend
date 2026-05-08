@@ -36,7 +36,7 @@
 
                 <div class="p-4 flex flex-col gap-2 flex-grow">
                     <div class="flex justify-between items-center">
-                        <a href="{{ route('product.detail', ['productId' => $product->id]) }}" class="text-lg font-semibold text-gray-800 hover:underline">{{ $product->name }}</a>
+                        <a href="{{ route('products.detail', ['productId' => $product->id]) }}" class="text-lg font-semibold text-gray-800 hover:underline">{{ $product->name }}</a>
                         <span class="text-gray-500 font-medium">Rp{{ number_format($product->price, 0, ',', '.') }}</span>
                     </div>
 
@@ -58,7 +58,7 @@
                         </svg>
                         Edit
                     </a>
-                    <form action="{{ route('products.destroy', ['productId' => $product->id]) }}" method="POST"
+                    <form action="{{ route('products.delete', ['productId' => $product->id]) }}" method="POST"
                           onsubmit="return confirm('Apakah Anda yakin ingin menghapus produk ini?');">
                         @csrf
                         @method('DELETE')

@@ -3,7 +3,7 @@
 @section('content')
 <div class="max-w-2xl mx-auto">
     <div class="mb-8 text-center sm:text-left">
-        <a href="{{ route('shipping.index') }}" class="inline-flex items-center gap-2 text-slate-500 hover:text-cyan-600 transition-colors mb-4 group text-sm">
+        <a href="{{ route('shippings.index') }}" class="inline-flex items-center gap-2 text-slate-500 hover:text-cyan-600 transition-colors mb-4 group text-sm">
             <svg class="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
             Back to Shipping Methods
         </a>
@@ -17,7 +17,7 @@
         </div>
     @endif
 
-    <form action="{{ route('shipping.store') }}" method="POST" class="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm space-y-6">
+    <form action="{{ route('shippings.create') }}" method="POST" class="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm space-y-6">
         @csrf
         
         <div class="space-y-2">
@@ -44,7 +44,7 @@
         </div>
 
         <div class="pt-4 flex flex-col sm:flex-row gap-4">
-            <a href="{{ route('shipping.index') }}" class="flex-1 text-center py-4 rounded-2xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all">Cancel</a>
+            <a href="{{ route('shippings.index') }}" class="flex-1 text-center py-4 rounded-2xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all">Cancel</a>
             <button type="submit" class="flex-[2] bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-cyan-500/20 transition-all transform active:scale-[0.98]">
                 Create Shipping Method
             </button>

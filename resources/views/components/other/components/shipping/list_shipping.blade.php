@@ -7,7 +7,7 @@
             <h1 class="text-3xl font-bold text-slate-900">Shipping Methods</h1>
             <p class="text-slate-500 text-sm">Manage courier services and delivery rates</p>
         </div>
-        <a href="{{ route('shipping.create') }}"
+        <a href="{{ route('shippings.create.form') }}"
            class="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-2.5 px-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
             Add Method
@@ -36,10 +36,10 @@
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     </div>
                     <div class="flex gap-2">
-                        <a href="{{ route('shipping.edit', $shipping->id) }}" class="p-2 text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-all">
+                        <a href="{{ route('shippings.edit.form', $shipping->id) }}" class="p-2 text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-all">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                         </a>
-                        <form action="{{ route('shipping.delete', $shipping->id) }}" method="POST" onsubmit="return confirm('Hapus metode ini?');">
+                        <form action="{{ route('shippings.delete', $shipping->id) }}" method="POST" onsubmit="return confirm('Hapus metode ini?');">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all">

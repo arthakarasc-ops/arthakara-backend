@@ -4,7 +4,7 @@
 <div class="max-w-2xl mx-auto mt-10">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">Edit Color</h1>
-        <a href="{{ route('colors.get') }}" class="text-slate-500 hover:underline flex items-center gap-2">
+        <a href="{{ route('colors.index') }}" class="text-slate-500 hover:underline flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
             Back to List
         </a>
@@ -22,7 +22,7 @@
         </div>
     @endif
 
-    <form action="{{ route('color.update', ['colorId' => $color->id]) }}" method="POST" class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+    <form action="{{ route('colors.update', ['colorId' => $color->id]) }}" method="POST" class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
         @csrf
         @method('PUT')
 

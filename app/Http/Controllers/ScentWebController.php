@@ -22,7 +22,7 @@ class ScentWebController extends Controller
                 'is_active'   => true,
             ]);
 
-            return redirect()->route('scent.get')->with('success', 'Wangi berhasil dibuat!');
+            return redirect()->route('scents.index')->with('success', 'Wangi berhasil dibuat!');
         } catch (\Exception $ex) {
             Log::error('Scent creation failed: ' . $ex->getMessage());
             return redirect()->back()->with('error', 'Gagal membuat wangi: ' . $ex->getMessage());
@@ -58,7 +58,7 @@ class ScentWebController extends Controller
                 'is_active'   => $validated['is_active'] ?? $scent->is_active,
             ]);
 
-            return redirect()->route('scent.get')->with('success', 'Wangi berhasil diperbarui!');
+            return redirect()->route('scents.index')->with('success', 'Wangi berhasil diperbarui!');
         } catch (\Exception $ex) {
             Log::error('Scent update failed: ' . $ex->getMessage());
             return redirect()->back()->with('error', 'Gagal memperbarui wangi: ' . $ex->getMessage());
@@ -71,7 +71,7 @@ class ScentWebController extends Controller
             $scent = Scent::findOrFail($scentId);
             $scent->delete();
 
-            return redirect()->route('scent.get')->with('success', 'Wangi berhasil dihapus!');
+            return redirect()->route('scents.index')->with('success', 'Wangi berhasil dihapus!');
         } catch (\Exception $ex) {
             Log::error('Scent deletion failed: ' . $ex->getMessage());
             return redirect()->back()->with('error', 'Gagal menghapus wangi.');

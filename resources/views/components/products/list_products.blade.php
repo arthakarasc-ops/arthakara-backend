@@ -31,7 +31,7 @@
                 </select>
             </form>
 
-            <a href="{{ route('create-product') }}"
+            <a href="{{ route('products.create.form') }}"
                class="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-2.5 px-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 Add Product
@@ -51,7 +51,7 @@
 
                 <div class="p-5 flex flex-col flex-grow">
                     <div class="flex justify-between items-start mb-3">
-                        <a href="{{ route('product.detail', ['productId' => $product->id]) }}" class="text-lg font-bold text-slate-800 hover:text-cyan-600 transition-colors line-clamp-1">{{ $product->name }}</a>
+                        <a href="{{ route('products.detail', ['productId' => $product->id]) }}" class="text-lg font-bold text-slate-800 hover:text-cyan-600 transition-colors line-clamp-1">{{ $product->name }}</a>
                     </div>
                     
                     <div class="flex flex-col gap-2 mt-auto">
@@ -70,7 +70,7 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                         Edit
                     </a>
-                    <form action="{{ route('products.destroy', ['productId' => $product->id]) }}" method="POST"
+                    <form action="{{ route('products.delete', ['productId' => $product->id]) }}" method="POST"
                           onsubmit="return confirm('Apakah Anda yakin ingin menghapus produk ini?');" class="w-full">
                         @csrf
                         @method('DELETE')

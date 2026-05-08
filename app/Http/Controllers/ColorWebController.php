@@ -18,7 +18,7 @@ class ColorWebController extends Controller
                 'name'     => $data['name'],
             ]);
 
-            return redirect()->route('colors.get')->with('success', 'Warna berhasil dibuat!');
+            return redirect()->route('colors.index')->with('success', 'Warna berhasil dibuat!');
         } catch (\Exception $ex) {
             Log::error('Color creation failed: ' . $ex->getMessage());
             return redirect()->back()->with('error', 'Gagal membuat warna. Silakan coba lagi.');
@@ -47,7 +47,7 @@ class ColorWebController extends Controller
             $color = Color::findOrFail($colorId);
             $color->update($validated);
 
-            return redirect()->route('colors.get')->with('success', 'Warna berhasil diperbarui!');
+            return redirect()->route('colors.index')->with('success', 'Warna berhasil diperbarui!');
         } catch (\Exception $ex) {
             Log::error('Color update failed: ' . $ex->getMessage());
             return redirect()->back()->with('error', 'Gagal memperbarui warna.');
@@ -60,7 +60,7 @@ class ColorWebController extends Controller
             $color = Color::findOrFail($colorId);
             $color->delete();
 
-            return redirect()->route('colors.get')->with('success', 'Warna berhasil dihapus!');
+            return redirect()->route('colors.index')->with('success', 'Warna berhasil dihapus!');
         } catch (\Exception $ex) {
             Log::error('Color deletion failed: ' . $ex->getMessage());
             return redirect()->back()->with('error', 'Gagal menghapus warna.');

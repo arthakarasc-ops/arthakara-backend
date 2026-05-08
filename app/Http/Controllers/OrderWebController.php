@@ -79,7 +79,7 @@ class OrderWebController extends Controller
 
         $order->save();
 
-        return redirect()->route('order.detail', $orderId)->with('success', 'Status dan/atau Resi berhasil diperbarui.');
+        return redirect()->route('orders.detail', $orderId)->with('success', 'Status dan/atau Resi berhasil diperbarui.');
     }
 
     public function resendTrackingWA($orderId)

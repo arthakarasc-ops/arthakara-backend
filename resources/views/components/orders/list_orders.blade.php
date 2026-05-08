@@ -53,7 +53,7 @@
                 </div>
 
                 <div class="p-4 bg-slate-50/50 border-t border-slate-50">
-                    <a href="{{ route('order.detail', ['orderId' => $order->id]) }}"
+                    <a href="{{ route('orders.detail', ['orderId' => $order->id]) }}"
                        class="w-full bg-white hover:bg-slate-900 hover:text-white text-slate-600 font-bold py-2.5 rounded-xl transition-all duration-300 text-center flex items-center justify-center gap-2 text-sm shadow-sm">
                         View Detail
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
