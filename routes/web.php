@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Route;
 Route::redirect('/login', '/admin/login');
 Route::redirect('/', '/admin');
 
-// Authentication Routes (Moved to /admin prefix for safety)
+// Authentication Routes
 Route::get('/admin/login', function () {
     return view('auth.login');
 })->name('login');
@@ -43,10 +43,10 @@ Route::middleware(['is_admin_web'])->prefix('admin')->group(function () {
 
     // Orders
     Route::controller(OrderWebController::class)->group(function() {
-        Route::get('/orders', 'getOrders')->name('orders.index');
-        Route::get('/orders/{orderId}', 'showOrderDetail')->name('orders.detail');
+        Route::get('/orders', 'showOrders')->name('orders.index');
+        Route::get('/orders/{orderId}', 'showDetail')->name('orders.detail');
         Route::patch('/orders/{orderId}/status', 'updateStatus')->name('orders.updateStatus');
-        Route::patch('/orders/{orderId}/tracking', 'updateTracking')->name('orders.updateTracking');
+        Route::post('/orders/{orderId}/resend-wa', 'resendTrackingWA')->name('order.resendWA');
     });
 
     // Products
@@ -69,14 +69,14 @@ Route::middleware(['is_admin_web'])->prefix('admin')->group(function () {
     Route::controller(CollectionWebController::class)->group(function() {
         Route::get('/collections', 'getCollections')->name('collections.index');
         Route::post('/collections/create', 'createCollection')->name('collections.create');
-        Route::get('/collections/{collectionId}/edit', 'showEditForm')->name('collections.edit.form');
+        Route::get('/collections/{collectionId}/edit', 'editCollection')->name('collections.edit.form');
         Route::put('/collections/{collectionId}/update', 'updateCollection')->name('collections.update');
         Route::delete('/collections/{collectionId}/delete', 'deleteCollection')->name('collections.delete');
     });
 
     // Colors
     Route::controller(ColorWebController::class)->group(function() {
-        Route::get('/colors', 'getColors')->name('colors.get');
+        Route::get('/colors/get', 'getColors')->name('colors.get');
         Route::post('/colors/create', 'createColor')->name('colors.create');
         Route::get('/colors/{colorId}/edit', 'showEditForm')->name('color.edit.form');
         Route::put('/colors/{colorId}/update', 'updateColor')->name('color.update');
@@ -85,16 +85,17 @@ Route::middleware(['is_admin_web'])->prefix('admin')->group(function () {
 
     // Scents
     Route::controller(ScentWebController::class)->group(function() {
-        Route::get('/scents', 'getScents')->name('scent.get');
+        Route::get('/scents/get', 'getScents')->name('scent.get');
         Route::post('/scents/create', 'createScent')->name('scents.create');
         Route::get('/scents/{scentId}/edit', 'showEditForm')->name('scent.edit.form');
         Route::put('/scents/{scentId}/update', 'updateScent')->name('scents.update');
         Route::delete('/scents/{scentId}/delete', 'deleteScent')->name('scent.delete');
+        Route::put('/scents/{scentId}/toggle', 'toggleStatus')->name('scent.toggle');
     });
 
     // Types
     Route::controller(TypeWebController::class)->group(function() {
-        Route::get('/types', 'getTypes')->name('type.get');
+        Route::get('/types/get', 'getTypes')->name('type.get');
         Route::post('/types/create', 'createType')->name('types.create');
         Route::get('/types/{typeId}/edit', 'showEditForm')->name('type.edit.form');
         Route::put('/types/{typeId}/update', 'updateType')->name('type.update');
@@ -103,7 +104,7 @@ Route::middleware(['is_admin_web'])->prefix('admin')->group(function () {
 
     // Statuses
     Route::controller(StatusWebController::class)->group(function() {
-        Route::get('/status', 'getStatuses')->name('status.get');
+        Route::get('/status/get', 'getStatuses')->name('status.get');
         Route::post('/status/create', 'createStatus')->name('status.create');
         Route::get('/status/{statusId}/edit', 'showEditForm')->name('status.edit.form');
         Route::put('/status/{statusId}/update', 'updateStatus')->name('status.update');
