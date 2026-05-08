@@ -106,8 +106,14 @@
             <!-- Media Card -->
             <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
                 <h2 class="text-lg font-bold text-slate-800">Product Media</h2>
-                <div class="border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center hover:border-cyan-400 transition-colors group cursor-pointer relative">
-                    <input id="image_upload" type="file" name="image" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" required>
+                <div id="image-preview-container" class="hidden mb-4 relative aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
+                    <img id="image-preview" src="#" alt="Preview" class="w-full h-full object-cover">
+                    <button type="button" onclick="resetImage()" class="absolute top-2 right-2 bg-rose-500 text-white p-1.5 rounded-full shadow-lg hover:bg-rose-600 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div id="upload-placeholder" class="border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center hover:border-cyan-400 transition-colors group cursor-pointer relative">
+                    <input id="image_upload" type="file" name="image" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" required onchange="previewImage(this)">
                     <div class="py-4">
                         <svg class="w-10 h-10 text-slate-400 mx-auto mb-2 group-hover:text-cyan-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                         <p class="text-sm font-semibold text-slate-600">Click to upload image</p>
@@ -119,12 +125,11 @@
 
             <!-- Attributes Card -->
             <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
-                <h2 class="text-lg font-bold text-slate-800">Attributes</h2>
+                <h2 class="text-lg font-bold text-slate-800">Attributes <span class="text-rose-500 text-xs font-normal">*Required</span></h2>
                 
                 <div>
-                    <label for="color_ids" class="block text-slate-700 text-sm font-semibold mb-1.5">Color (Max 1)</label>
-                    <select id="color_ids" name="color_ids[]" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-cyan-500 transition-all cursor-pointer @error('color_ids') border-red-500 @enderror">
-                        <option value="" disabled selected>Select a color</option>
+                    <label for="color_ids" class="block text-slate-700 text-sm font-semibold mb-1.5">Color (Select at least 1)</label>
+                    <select id="color_ids" name="color_ids[]" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-cyan-500 transition-all cursor-pointer @error('color_ids') border-red-500 @enderror" multiple required>
                         @foreach(\App\Models\Color::all() as $color)
                             <option value="{{ $color->id }}" {{ in_array($color->id, old('color_ids', [])) ? 'selected' : '' }}>{{ $color->name }}</option>
                         @endforeach
@@ -132,8 +137,8 @@
                 </div>
 
                 <div>
-                    <label for="scent_ids" class="block text-slate-700 text-sm font-semibold mb-1.5">Aroma/Scents</label>
-                    <select id="scent_ids" name="scent_ids[]" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-cyan-500 transition-all cursor-pointer @error('scent_ids') border-red-500 @enderror" multiple>
+                    <label for="scent_ids" class="block text-slate-700 text-sm font-semibold mb-1.5">Aroma/Scents (Select at least 1)</label>
+                    <select id="scent_ids" name="scent_ids[]" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-cyan-500 transition-all cursor-pointer @error('scent_ids') border-red-500 @enderror" multiple required>
                         @foreach(\App\Models\Scent::all() as $scent)
                             <option value="{{ $scent->id }}" {{ in_array($scent->id, old('scent_ids', [])) ? 'selected' : '' }}>{{ $scent->name }} (+Rp{{ number_format($scent->extra_price) }})</option>
                         @endforeach
@@ -147,5 +152,34 @@
             </button>
         </div>
     </form>
+</div>
+
+<script>
+    function previewImage(input) {
+        const previewContainer = document.getElementById('image-preview-container');
+        const preview = document.getElementById('image-preview');
+        const placeholder = document.getElementById('upload-placeholder');
+
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                previewContainer.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function resetImage() {
+        const input = document.getElementById('image_upload');
+        const previewContainer = document.getElementById('image-preview-container');
+        const placeholder = document.getElementById('upload-placeholder');
+        
+        input.value = "";
+        previewContainer.classList.add('hidden');
+        placeholder.classList.remove('hidden');
+    }
+</script>
 </div>
 @endsection

@@ -84,19 +84,19 @@
             <!-- Media Card -->
             <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4 text-center">
                 <h2 class="text-lg font-bold text-slate-800 text-left">Product Image</h2>
-                @if($product->productUsageImages->count() > 0)
-                    <div class="relative aspect-square rounded-2xl overflow-hidden border border-slate-100 mb-4 group">
-                        <img src="{{ $product->productUsageImages->first()->image_url }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
-                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <p class="text-white text-xs font-bold">Current Image</p>
-                        </div>
+                
+                <div id="main-image-preview-container" class="relative aspect-square rounded-2xl overflow-hidden border border-slate-100 mb-4 group {{ $product->productUsageImages->count() > 0 ? '' : 'hidden' }}">
+                    <img id="main-image-preview" src="{{ $product->productUsageImages->first()->image_url ?? '#' }}" alt="Preview" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <p class="text-white text-xs font-bold">New Preview</p>
                     </div>
-                @endif
+                </div>
+
                 <div class="border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center hover:border-cyan-400 transition-colors group cursor-pointer relative">
-                    <input id="image_upload" type="file" name="image" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    <input id="image_upload" type="file" name="image" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="previewMainImage(this)">
                     <div class="py-2">
                         <svg class="w-8 h-8 text-slate-400 mx-auto mb-1 group-hover:text-cyan-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        <p class="text-xs font-semibold text-slate-600">Replace Image</p>
+                        <p class="text-xs font-semibold text-slate-600">Replace Main Image</p>
                     </div>
                 </div>
                 @error('image') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
@@ -127,21 +127,20 @@
 
             <!-- Attributes Card -->
             <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
-                <h2 class="text-lg font-bold text-slate-800">Attributes</h2>
+                <h2 class="text-lg font-bold text-slate-800">Attributes <span class="text-rose-500 text-xs font-normal">*Required</span></h2>
                 
                 <div>
-                    <label for="color_ids" class="block text-slate-700 text-sm font-semibold mb-1.5">Colors</label>
-                    <select id="color_ids" name="color_ids[]" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-cyan-500 transition-all cursor-pointer @error('color_ids') border-red-500 @enderror" multiple>
+                    <label for="color_ids" class="block text-slate-700 text-sm font-semibold mb-1.5">Colors (Select at least 1)</label>
+                    <select id="color_ids" name="color_ids[]" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-cyan-500 transition-all cursor-pointer @error('color_ids') border-red-500 @enderror" multiple required>
                         @foreach(\App\Models\Color::all() as $color)
                             <option value="{{ $color->id }}" {{ in_array($color->id, old('color_ids', $product->variants ? $product->variants->pluck('color_id')->toArray() : [])) ? 'selected' : '' }}>{{ $color->name }}</option>
                         @endforeach
                     </select>
-                    <p class="text-[10px] text-slate-400 mt-1">Select one or more colors for this product.</p>
                 </div>
 
                 <div>
-                    <label for="scent_ids" class="block text-slate-700 text-sm font-semibold mb-1.5">Aroma/Scents</label>
-                    <select id="scent_ids" name="scent_ids[]" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-cyan-500 transition-all cursor-pointer @error('scent_ids') border-red-500 @enderror" multiple>
+                    <label for="scent_ids" class="block text-slate-700 text-sm font-semibold mb-1.5">Aroma/Scents (Select at least 1)</label>
+                    <select id="scent_ids" name="scent_ids[]" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-cyan-500 transition-all cursor-pointer @error('scent_ids') border-red-500 @enderror" multiple required>
                         @foreach(\App\Models\Scent::all() as $scent)
                             <option value="{{ $scent->id }}" {{ in_array($scent->id, old('scent_ids', $product->scents ? $product->scents->pluck('id')->toArray() : [])) ? 'selected' : '' }}>{{ $scent->name }}</option>
                         @endforeach
@@ -152,13 +151,16 @@
             <!-- Variant Management Card -->
             <div id="variants-section" class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
                 <h2 class="text-lg font-bold text-slate-800">Variant Management</h2>
-                <p class="text-[10px] text-slate-400">Manage specific stock and images for each color. If stock is left empty, it will follow the general stock.</p>
+                <p class="text-[10px] text-slate-400">Manage specific stock and images for each color.</p>
                 
                 <div class="space-y-4">
                     @foreach($product->variants as $variant)
                         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                            <div class="w-16 h-16 rounded-xl overflow-hidden bg-white border border-slate-200 shrink-0">
-                                <img src="{{ $variant->image_url }}" alt="" class="w-full h-full object-cover">
+                            <div class="w-16 h-16 rounded-xl overflow-hidden bg-white border border-slate-200 shrink-0 relative group">
+                                <img id="variant-preview-{{ $variant->color_id }}" src="{{ $variant->image_url }}" alt="" class="w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                    <p class="text-white text-[8px] font-bold">Preview</p>
+                                </div>
                             </div>
                             <div class="flex-grow space-y-3 w-full">
                                 <div class="flex justify-between items-center">
@@ -174,6 +176,7 @@
                                     <div>
                                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Variant Image</label>
                                         <input type="file" name="variant_images[{{ $variant->color_id }}]" accept="image/*" 
+                                               onchange="previewVariantImage(this, '{{ $variant->color_id }}')"
                                                class="w-full text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-[10px] file:font-semibold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100 cursor-pointer">
                                     </div>
                                 </div>
@@ -192,4 +195,32 @@
         </div>
     </form>
 </div>
+
+<script>
+    function previewMainImage(input) {
+        const preview = document.getElementById('main-image-preview');
+        const container = document.getElementById('main-image-preview-container');
+
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                container.classList.remove('hidden');
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function previewVariantImage(input, colorId) {
+        const preview = document.getElementById('variant-preview-' + colorId);
+
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+</script>
 @endsection

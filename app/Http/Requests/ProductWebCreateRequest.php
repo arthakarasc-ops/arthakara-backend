@@ -26,10 +26,14 @@ class ProductWebCreateRequest extends FormRequest
             'name' => ['required', 'max:100'],
             'collection_id' => ['required', 'exists:collections,id'], // Optional: Add existence check for better validation
             'type_id' => ['required', 'exists:types,id'], // Optional: Add existence check
-            'price' => ['required', 'numeric', 'min:0'], // Optional: Add numeric/min for price
+            'price' => ['required', 'numeric', 'min:0'],
             'stock' => ['required', 'integer', 'min:0'],
             'description' => ['required'],
-            'image' => ['required', 'image', 'mimes:jpeg,png,jpg,gif', 'max:4096'], // Validate as image file, max 2MB
+            'image' => ['required', 'image', 'mimes:jpeg,png,jpg,gif', 'max:5120'], 
+            'color_ids' => ['required', 'array', 'min:1'],
+            'color_ids.*' => ['exists:colors,id'],
+            'scent_ids' => ['required', 'array', 'min:1'],
+            'scent_ids.*' => ['exists:scents,id'],
         ];
     }
 

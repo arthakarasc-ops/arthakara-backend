@@ -34,12 +34,20 @@ class ProductWebController extends Controller
                 return redirect()->back()->with('error', 'Failed to upload image. Please check Cloudinary credentials.')->withInput();
             }
 
+            // Generate unique slug
+            $slug = Str::slug($data['name']);
+            $originalSlug = $slug;
+            $count = 1;
+            while (Product::where('slug', $slug)->exists()) {
+                $slug = $originalSlug . '-' . $count++;
+            }
+
             // Create the product
             $product = Product::create([
                 'name' => $data['name'],
                 'collection_id' => $data['collection_id'],
                 'type_id' => $data['type_id'],
-                'slug' => Str::slug($data['name']),
+                'slug' => $slug,
                 'price' => $data['price'],
                 'stock' => $data['stock'] ?? 0,
                 'description' => $data['description'],
@@ -177,9 +185,9 @@ class ProductWebController extends Controller
                 'price' => 'required|numeric|min:0',
                 'stock' => 'required|integer|min:0',
                 'description' => 'required|string',
-                'color_ids' => 'nullable|array',
+                'color_ids' => 'required|array|min:1',
                 'color_ids.*' => 'exists:colors,id',
-                'scent_ids' => 'nullable|array',
+                'scent_ids' => 'required|array|min:1',
                 'scent_ids.*' => 'exists:scents,id',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5000',
                 'variant_images' => 'nullable|array',
@@ -193,7 +201,7 @@ class ProductWebController extends Controller
                 'name' => $validated['name'],
                 'collection_id' => $validated['collection_id'],
                 'type_id' => $validated['type_id'],
-                'slug' => Str::slug($validated['name']),
+                // Slug TIDAK diupdate di sini agar link di FE tidak mati (404)
                 'price' => $validated['price'],
                 'stock' => $validated['stock'],
                 'description' => $validated['description']
