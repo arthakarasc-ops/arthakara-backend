@@ -238,6 +238,7 @@ class OrderController extends Controller
                 'total_price'         => $orderTotal,
                 'status_id'           => 1, // Pending
                 'payment_status'      => 'unpaid',
+                'tanggal_lahir'       => $data['tanggal_lahir'],
             ]);
 
             foreach ($processedItems as $pItem) {

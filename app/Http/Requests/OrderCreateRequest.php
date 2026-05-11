@@ -46,7 +46,8 @@ class OrderCreateRequest extends FormRequest
             'items.*.product_variant_id' => ['required', 'integer', 'exists:product_variants,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.scents' => ['required', 'array', 'size:2'],
-            'items.*.scents.*' => ['required', 'integer', 'exists:scents,id']
+            'items.*.scents.*' => ['required', 'integer', 'exists:scents,id'],
+            'tanggal_lahir' => ['required', 'date']
         ];
     }
 

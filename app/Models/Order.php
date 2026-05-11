@@ -23,7 +23,8 @@ class Order extends Model
         'status_id',
         'tracking_number',
         'midtrans_order_id',
-        'payment_status'
+        'payment_status',
+        'tanggal_lahir'
     ];
 
     public function orderItems(): HasMany {
