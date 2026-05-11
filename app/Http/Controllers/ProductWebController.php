@@ -123,22 +123,11 @@ class ProductWebController extends Controller
             if (!empty($variantIds)) {
                 \App\Models\CartItem::whereIn('product_variant_id', $variantIds)->delete();
                 
-                // 2. Nullify product_variant_id di order_items agar FK tidak gagal
-                // Data order tetap ada tapi variant-nya null (historical record)
-                \App\Models\OrderItem::whereIn('product_variant_id', $variantIds)
-                    ->update(['product_variant_id' => null]);
-                
-                // 3. Hapus semua varian
+                // 2. Hapus semua varian (Soft Delete otomatis jalan berkat trait)
                 $product->variants()->delete();
             }
 
-            // 4. Lepaskan relasi wangi (pivot)
-            $product->scents()->detach();
-
-            // 5. Hapus gambar produk
-            $product->productUsageImages()->delete();
-
-            // 6. Hapus produk
+            // 3. Hapus produk utama (Soft Delete otomatis jalan berkat trait)
             $product->delete();
 
             return redirect()->route('products.index')->with('success', 'Produk berhasil dihapus.');

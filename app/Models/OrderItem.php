@@ -32,7 +32,7 @@ class OrderItem extends Model
     ];
 
     public function productVariants(): BelongsTo {
-        return $this->belongsTo(ProductVariant::class, "product_variant_id", "id");
+        return $this->belongsTo(ProductVariant::class, "product_variant_id", "id")->withTrashed();
     }
 
     public function orders(): BelongsTo {

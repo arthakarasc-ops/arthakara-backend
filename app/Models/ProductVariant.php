@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductVariant extends Model
 {
+    use SoftDeletes;
     protected $table = "product_variants";
 
     protected $fillable = [
@@ -26,7 +28,7 @@ class ProductVariant extends Model
     // 🔥 ke Product (FIXED)
     public function product(): BelongsTo
     {
-        return $this->belongsTo(Product::class, "product_id");
+        return $this->belongsTo(Product::class, "product_id")->withTrashed();
     }
 
     // 🔥 ke Color (FIXED)
