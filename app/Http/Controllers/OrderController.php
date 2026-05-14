@@ -153,10 +153,12 @@ class OrderController extends Controller
         try {
             DB::beginTransaction();
 
-            // ✅ Validasi: 2 scent harus BERBEDA per item
+            // ✅ Validasi scent hanya jika diberikan
             foreach ($data['items'] as $index => $item) {
-                if (count(array_unique($item['scents'])) !== 2) {
-                    throw new Exception("Item ke-" . ($index + 1) . ": Pilih 2 wangi yang berbeda (tidak boleh memilih wangi yang sama 2x).");
+                if (!empty($item['scents'])) {
+                    if (count(array_unique($item['scents'])) !== count($item['scents'])) {
+                        throw new Exception("Item ke-" . ($index + 1) . ": Pilih wangi yang berbeda (tidak boleh memilih wangi yang sama 2x).");
+                    }
                 }
             }
 
@@ -211,16 +213,22 @@ class OrderController extends Controller
                     );
                 }
 
-                // ✅ Validasi semua scent aktif
-                $scents = \App\Models\Scent::whereIn('id', $item['scents'])
-                    ->where('is_active', true)
-                    ->get();
+                $extraPrice = 0;
+                $itemScents = $item['scents'] ?? [];
 
-                if ($scents->count() !== count($item['scents'])) {
-                    throw new Exception('Salah satu wangi yang dipilih sudah tidak aktif.');
+                // ✅ Validasi scent hanya jika diberikan
+                if (!empty($itemScents)) {
+                    $scents = \App\Models\Scent::whereIn('id', $itemScents)
+                        ->where('is_active', true)
+                        ->get();
+
+                    if ($scents->count() !== count($itemScents)) {
+                        throw new Exception('Salah satu wangi yang dipilih sudah tidak aktif.');
+                    }
+
+                    $extraPrice = $scents->sum('extra_price');
                 }
 
-                $extraPrice = $scents->sum('extra_price');
                 $unitPrice  = $variant->product->price + $extraPrice;
                 $itemTotal  = $unitPrice * $item['quantity'];
 
@@ -232,7 +240,7 @@ class OrderController extends Controller
                     'quantity'           => $item['quantity'],
                     'price_at_purchase'  => $unitPrice,
                     'total_price'        => $itemTotal,
-                    'scents'             => $item['scents'],
+                    'scents'             => $itemScents,
                 ];
             }
 

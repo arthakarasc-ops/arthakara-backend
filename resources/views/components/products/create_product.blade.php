@@ -137,8 +137,8 @@
                 </div>
 
                 <div>
-                    <label for="scent_ids" class="block text-slate-700 text-sm font-semibold mb-1.5">Aroma/Scents (Select at least 1)</label>
-                    <select id="scent_ids" name="scent_ids[]" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-cyan-500 transition-all cursor-pointer @error('scent_ids') border-red-500 @enderror" multiple required>
+                    <label for="scent_ids" class="block text-slate-700 text-sm font-semibold mb-1.5">Aroma/Scents <span class="text-slate-400 text-xs font-normal">(Optional)</span></label>
+                    <select id="scent_ids" name="scent_ids[]" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-cyan-500 transition-all cursor-pointer @error('scent_ids') border-red-500 @enderror" multiple>
                         @foreach(\App\Models\Scent::all() as $scent)
                             <option value="{{ $scent->id }}" {{ in_array($scent->id, old('scent_ids', [])) ? 'selected' : '' }}>{{ $scent->name }} (+Rp{{ number_format($scent->extra_price) }})</option>
                         @endforeach

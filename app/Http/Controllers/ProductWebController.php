@@ -176,7 +176,7 @@ class ProductWebController extends Controller
                 'description' => 'required|string',
                 'color_ids' => 'required|array|min:1',
                 'color_ids.*' => 'exists:colors,id',
-                'scent_ids' => 'required|array|min:1',
+                'scent_ids' => 'nullable|array',
                 'scent_ids.*' => 'exists:scents,id',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5000',
                 'variant_images' => 'nullable|array',

@@ -61,7 +61,7 @@ class CartController extends Controller
     {
         $request->validate([
             'product_variant_id' => 'required|exists:product_variants,id',
-            'scents' => 'required|array|size:2',
+            'scents' => 'nullable|array',
             'scents.*' => 'exists:scents,id',
             'qty' => 'nullable|integer|min:1'
         ]);
@@ -73,18 +73,30 @@ class CartController extends Controller
             $variant = \App\Models\ProductVariant::with('product')->findOrFail($request->product_variant_id);
             $product = $variant->product;
 
-            // ✅ VALIDASI SCENT AKTIF & BERBEDA
-            if (count(array_unique($request->scents)) !== 2) {
-                return response()->json(['error' => 'Pilih 2 wangi yang berbeda.'], 422);
-            }
+            $scents = [];
+            $extraPrice = 0;
 
-            $scents = Scent::whereIn('id', $request->scents)
-                ->where('is_active', true)
-                ->pluck('id')
-                ->toArray();
+            // Hanya validasi scent jika diberikan
+            if ($request->has('scents') && !empty($request->scents)) {
+                // ✅ VALIDASI SCENT AKTIF & BERBEDA
+                if (count(array_unique($request->scents)) !== count($request->scents)) {
+                    return response()->json(['error' => 'Pilih wangi yang berbeda.'], 422);
+                }
 
-            if (count($scents) !== 2) {
-                return response()->json(['error' => 'Salah satu wangi tidak aktif.'], 422);
+                $scents = Scent::whereIn('id', $request->scents)
+                    ->where('is_active', true)
+                    ->pluck('id')
+                    ->toArray();
+
+                if (count($scents) !== count($request->scents)) {
+                    return response()->json(['error' => 'Salah satu wangi tidak aktif.'], 422);
+                }
+
+                // SORT SCENT UNTUK CEK DUPLIKASI DI CART
+                sort($scents);
+
+                // HITUNG EXTRA PRICE SCENT
+                $extraPrice = Scent::whereIn('id', $scents)->sum('extra_price');
             }
 
             // ✅ CEK STOK
@@ -92,11 +104,7 @@ class CartController extends Controller
                 return response()->json(['error' => 'Stok tidak mencukupi. Sisa: ' . $product->stock], 422);
             }
 
-            // SORT SCENT UNTUK CEK DUPLIKASI DI CART
-            sort($scents);
-
             // HITUNG HARGA (Base Price + Extra Price Scent)
-            $extraPrice = Scent::whereIn('id', $scents)->sum('extra_price');
             $finalPrice = $product->price + $extraPrice;
 
             // CEK APAKAH ITEM YANG SAMA SUDAH ADA DI KERANJANG
