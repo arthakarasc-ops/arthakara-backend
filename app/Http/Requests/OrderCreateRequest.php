@@ -47,7 +47,11 @@ class OrderCreateRequest extends FormRequest
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.scents' => ['required', 'array', 'size:2'],
             'items.*.scents.*' => ['required', 'integer', 'exists:scents,id'],
-            'tanggal_lahir' => ['required', 'date']
+            'tanggal_lahir' => ['required', 'date'],
+            'courier_code' => ['required_if:shipping_method_id,1', 'string', 'nullable'],
+            'courier_service' => ['required_if:shipping_method_id,1', 'string', 'nullable'],
+            'shipping_cost' => ['required_if:shipping_method_id,1', 'numeric', 'min:0', 'nullable'],
+            'destination_city_id' => ['required_if:shipping_method_id,1', 'string', 'nullable']
         ];
     }
 

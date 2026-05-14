@@ -17,7 +17,8 @@ use App\Http\Controllers\{
     ShippingMethodController,
     StatusController,
     TypeController,
-    UserController
+    UserController,
+    RajaOngkirController
 };
 
 /*
@@ -55,6 +56,17 @@ Route::get('/scents', [ScentController::class, 'index']); // 🔥 scent public
 Route::get('/sizes', [ColorController::class, 'getSizes']);
 Route::get('/fabrics', [ColorController::class, 'getFabrics']);
 Route::get('/statuses', [StatusController::class, 'getStatuses']);
+
+/*
+|--------------------------------------------------------------------------
+| RAJAONGKIR
+|--------------------------------------------------------------------------
+*/
+Route::controller(RajaOngkirController::class)->group(function () {
+    Route::get('/rajaongkir/provinces', 'getProvinces');
+    Route::get('/rajaongkir/cities', 'getCities');
+    Route::post('/rajaongkir/cost', 'getCost');
+});
 
 /*
 |--------------------------------------------------------------------------

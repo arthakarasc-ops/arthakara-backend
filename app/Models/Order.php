@@ -24,7 +24,13 @@ class Order extends Model
         'tracking_number',
         'midtrans_order_id',
         'payment_status',
-        'tanggal_lahir'
+        'tanggal_lahir',
+        'courier_code',
+        'courier_service',
+        'shipping_cost',
+        'destination_city_id',
+        'origin_city_id',
+        'total_weight'
     ];
 
     public function orderItems(): HasMany {

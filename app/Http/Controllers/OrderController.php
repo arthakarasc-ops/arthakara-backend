@@ -117,6 +117,12 @@ class OrderController extends Controller
                     'name'  => $order->shippingMethods->name,
                     'price' => (int) $order->shippingMethods->price,
                 ],
+                'courier' => [
+                    'code'    => $order->courier_code,
+                    'service' => $order->courier_service,
+                    'cost'    => (int) $order->shipping_cost,
+                    'weight'  => $order->total_weight,
+                ],
                 'total_price' => (int) $order->total_price,
                 'status'      => $order->statuses->name,
                 'created_at'  => $order->created_at->format('d-M-y'),
@@ -187,6 +193,7 @@ class OrderController extends Controller
             }
 
             $itemTotalPrice = 0;
+            $totalWeight = 0;
             $processedItems = [];
 
             foreach ($data['items'] as $item) {
@@ -218,6 +225,7 @@ class OrderController extends Controller
                 $itemTotal  = $unitPrice * $item['quantity'];
 
                 $itemTotalPrice += $itemTotal;
+                $totalWeight += ($variant->product->weight ?? 50) * $item['quantity'];
 
                 $processedItems[] = [
                     'product_variant_id' => $item['product_variant_id'],
@@ -228,7 +236,37 @@ class OrderController extends Controller
                 ];
             }
 
-            $orderTotal = $itemTotalPrice + $shippingMethod->price;
+            $shippingCost = 0;
+
+            if ($data['shipping_method_id'] == 1) { // Delivery
+                // Verify with RajaOngkir
+                $rajaOngkirService = app(\App\Services\RajaOngkirService::class);
+                $costs = $rajaOngkirService->getCost(
+                    $data['destination_city_id'],
+                    $totalWeight > 0 ? $totalWeight : 1, // min 1 gram
+                    $data['courier_code']
+                );
+
+                $validCost = null;
+                foreach ($costs as $cost) {
+                    if ($cost['service'] === $data['courier_service']) {
+                        $validCost = $cost['cost'];
+                        break;
+                    }
+                }
+
+                if ($validCost === null) {
+                    throw new Exception('Layanan kurir tidak valid atau tidak ditemukan.');
+                }
+
+                // Kita gunakan harga dari server untuk keamanan
+                $shippingCost = $validCost;
+            } else {
+                // Take away
+                $shippingCost = 0;
+            }
+
+            $orderTotal = $itemTotalPrice + $shippingCost;
 
             $order = Order::create([
                 'user_id'             => $user->id,
@@ -239,6 +277,12 @@ class OrderController extends Controller
                 'status_id'           => 1, // Pending
                 'payment_status'      => 'unpaid',
                 'tanggal_lahir'       => $data['tanggal_lahir'],
+                'courier_code'        => $data['shipping_method_id'] == 1 ? $data['courier_code'] : null,
+                'courier_service'     => $data['shipping_method_id'] == 1 ? $data['courier_service'] : null,
+                'shipping_cost'       => $shippingCost,
+                'destination_city_id' => $data['shipping_method_id'] == 1 ? $data['destination_city_id'] : null,
+                'origin_city_id'      => $data['shipping_method_id'] == 1 ? config('rajaongkir.origin') : null,
+                'total_weight'        => $totalWeight,
             ]);
 
             foreach ($processedItems as $pItem) {

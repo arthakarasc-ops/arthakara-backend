@@ -68,13 +68,17 @@ class PaymentController extends Controller
         }
 
         // ✅ Tambahkan ongkos kirim sebagai item tersendiri
-        $shippingPrice = (int) $order->shippingMethods->price;
+        $shippingPrice = (int) $order->shipping_cost;
         if ($shippingPrice > 0) {
+            $shippingName = $order->courier_code 
+                ? strtoupper($order->courier_code) . ' - ' . $order->courier_service 
+                : 'Ongkos Kirim - ' . $order->shippingMethods->name;
+                
             $items[] = [
                 'id'       => 'SHIPPING',
                 'price'    => $shippingPrice,
                 'quantity' => 1,
-                'name'     => 'Ongkos Kirim - ' . $order->shippingMethods->name,
+                'name'     => substr($shippingName, 0, 50),
             ];
         }
 
