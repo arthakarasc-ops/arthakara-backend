@@ -152,6 +152,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::controller(CartController::class)->group(function () {
         Route::get('/cart', 'index');
         Route::post('/cart', 'store');
+        Route::post('/cart/bulk', 'storeBulk');
         Route::put('/cart/{id}', 'update')->whereNumber('id');
         Route::delete('/cart/{id}', 'destroy')->whereNumber('id');
         Route::delete('/cart', 'clear');

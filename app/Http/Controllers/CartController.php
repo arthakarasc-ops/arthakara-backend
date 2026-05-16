@@ -76,27 +76,22 @@ class CartController extends Controller
             $scents = [];
             $extraPrice = 0;
 
-            // Hanya validasi scent jika diberikan
             if ($request->has('scents') && !empty($request->scents)) {
-                // ✅ VALIDASI SCENT AKTIF & BERBEDA
-                if (count(array_unique($request->scents)) !== count($request->scents)) {
-                    return response()->json(['error' => 'Pilih wangi yang berbeda.'], 422);
-                }
-
-                $scents = Scent::whereIn('id', $request->scents)
+                $validScents = Scent::whereIn('id', $request->scents)
                     ->where('is_active', true)
-                    ->pluck('id')
-                    ->toArray();
+                    ->get()
+                    ->keyBy('id');
 
-                if (count($scents) !== count($request->scents)) {
-                    return response()->json(['error' => 'Salah satu wangi tidak aktif.'], 422);
+                foreach ($request->scents as $requestedId) {
+                    if (!$validScents->has($requestedId)) {
+                        return response()->json(['error' => 'Salah satu wangi tidak aktif atau tidak ditemukan.'], 422);
+                    }
+                    $scents[] = (int) $requestedId;
+                    $extraPrice += $validScents->get($requestedId)->extra_price;
                 }
 
                 // SORT SCENT UNTUK CEK DUPLIKASI DI CART
                 sort($scents);
-
-                // HITUNG EXTRA PRICE SCENT
-                $extraPrice = Scent::whereIn('id', $scents)->sum('extra_price');
             }
 
             // ✅ CEK STOK
@@ -143,6 +138,94 @@ class CartController extends Controller
             return response()->json([
                 'message' => 'Berhasil ditambahkan ke keranjang.',
                 'data' => $cartItem
+            ], 201);
+        });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | BULK ADD TO CART
+    |--------------------------------------------------------------------------
+    */
+    public function storeBulk(Request $request): JsonResponse
+    {
+        $request->validate([
+            'items' => 'required|array|min:1',
+            'items.*.product_variant_id' => 'required|exists:product_variants,id',
+            'items.*.scents' => 'nullable|array',
+            'items.*.scents.*' => 'exists:scents,id',
+            'items.*.qty' => 'nullable|integer|min:1'
+        ]);
+
+        $user = $request->user();
+
+        return DB::transaction(function () use ($request, $user) {
+            $addedItems = [];
+
+            foreach ($request->items as $itemData) {
+                $variantId = $itemData['product_variant_id'];
+                $qty = $itemData['qty'] ?? 1;
+                $requestScents = $itemData['scents'] ?? [];
+
+                $variant = \App\Models\ProductVariant::with('product')->findOrFail($variantId);
+                $product = $variant->product;
+
+                $scents = [];
+                $extraPrice = 0;
+
+                if (!empty($requestScents)) {
+                    $validScents = Scent::whereIn('id', $requestScents)
+                        ->where('is_active', true)
+                        ->get()
+                        ->keyBy('id');
+
+                    foreach ($requestScents as $requestedId) {
+                        if (!$validScents->has($requestedId)) {
+                            return response()->json(['error' => 'Salah satu wangi tidak aktif.'], 422);
+                        }
+                        $scents[] = (int) $requestedId;
+                        $extraPrice += $validScents->get($requestedId)->extra_price;
+                    }
+                    sort($scents);
+                }
+
+                if ($product->stock < $qty) {
+                    return response()->json(['error' => 'Stok tidak mencukupi untuk ' . $product->name], 422);
+                }
+
+                $finalPrice = $product->price + $extraPrice;
+
+                $existingItem = CartItem::where('user_id', $user->id)
+                    ->where('product_variant_id', $variant->id)
+                    ->get()
+                    ->first(function ($item) use ($scents) {
+                        $itemScents = $item->scents;
+                        sort($itemScents);
+                        return $itemScents === $scents;
+                    });
+
+                if ($existingItem) {
+                    $newQty = $existingItem->qty + $qty;
+                    if ($product->stock < $newQty) {
+                        return response()->json(['error' => 'Total di keranjang melebihi stok yang tersedia untuk ' . $product->name], 422);
+                    }
+                    $existingItem->increment('qty', $qty);
+                    $addedItems[] = $existingItem;
+                } else {
+                    $cartItem = CartItem::create([
+                        'user_id' => $user->id,
+                        'product_variant_id' => $variant->id,
+                        'scents' => $scents,
+                        'qty' => $qty,
+                        'price' => $finalPrice
+                    ]);
+                    $addedItems[] = $cartItem;
+                }
+            }
+
+            return response()->json([
+                'message' => 'Berhasil ditambahkan ke keranjang.',
+                'data' => $addedItems
             ], 201);
         });
     }
