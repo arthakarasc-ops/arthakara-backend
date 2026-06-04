@@ -25,7 +25,9 @@ class ProductService
         }
 
         if (isset($filters['type_id']) && $filters['type_id']) {
-            $query->where('type_id', $filters['type_id']);
+            $query->whereHas('types', function ($q) use ($filters) {
+                $q->where('types.id', $filters['type_id']);
+            });
         }
 
         if (isset($filters['color_id']) && $filters['color_id']) {
@@ -53,7 +55,9 @@ class ProductService
         }
 
         if (isset($filters['type_id']) && $filters['type_id']) {
-            $query->where('type_id', $filters['type_id']);
+            $query->whereHas('types', function ($q) use ($filters) {
+                $q->where('types.id', $filters['type_id']);
+            });
         }
 
         if (isset($filters['color_id']) && $filters['color_id']) {

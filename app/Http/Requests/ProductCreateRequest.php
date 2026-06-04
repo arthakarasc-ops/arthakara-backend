@@ -25,7 +25,8 @@ class ProductCreateRequest extends FormRequest
         return [
             'name' => ['required', 'max:100'],
             'collection_id' => ['required', 'exists:collections,id'],
-            'type_id' => ['required', 'exists:types,id'],
+            'type_ids' => ['required', 'array', 'min:1'],
+            'type_ids.*' => ['exists:types,id'],
             'slug' => ['required', 'max:100'],
             'price' => ['required', 'numeric', 'min:0'],
             'description' => ['required'],

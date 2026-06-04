@@ -30,6 +30,11 @@ Route::controller(UserController::class)->group(function () {
     Route::post('/auth/register', 'userRegister');
     Route::post('/auth/login', 'userLogin');
     Route::post('/auth/admin-login', 'adminLogin');
+
+    // Forgot Password (OTP-based)
+    Route::post('/auth/forgot-password', 'forgotPassword');
+    Route::post('/auth/verify-otp', 'verifyOtp');
+    Route::post('/auth/reset-password', 'resetPassword');
 });
 
 /*

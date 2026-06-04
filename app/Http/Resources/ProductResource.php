@@ -14,7 +14,11 @@ class ProductResource extends JsonResource
             'name' => $this->name,
 
             'collection' => $this->collections->name ?? null,
-            'type' => $this->types->name ?? null,
+            'type' => $this->types->first()->name ?? null,
+            'types' => $this->types->map(fn($t) => [
+                'id' => $t->id,
+                'name' => $t->name,
+            ])->values(),
 
             'slug' => $this->slug,
             'price' => (int) $this->price,

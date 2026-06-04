@@ -32,6 +32,7 @@
         </div>
         <form action="{{ route('orders.updateStatus', $order->id) }}" method="POST" class="p-6">
             @csrf
+            @method('PATCH')
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                     <label for="type_id" class="block text-sm font-semibold text-slate-700 mb-2">Order Status</label>
@@ -111,7 +112,15 @@
                 </div>
                 <div>
                     <p class="text-sm text-slate-500 font-medium mb-1">Metode Pengiriman</p>
-                    <p class="text-slate-800 font-semibold">{{ $order->shippingMethods->name ?? '-' }} <span class="text-slate-500 font-normal">(Rp{{ number_format($order->shippingMethods->price ?? 0, 0, ',', '.') }})</span></p>
+                    @if($order->courier_code)
+                        <p class="text-slate-800 font-semibold">{{ strtoupper($order->courier_code) }} — {{ $order->courier_service ?? '-' }}</p>
+                        <p class="text-slate-500 text-sm mt-1">Ongkir: <span class="font-semibold text-slate-700">Rp{{ number_format($order->shipping_cost ?? 0, 0, ',', '.') }}</span></p>
+                    @else
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-amber-50 text-amber-700 border border-amber-100">
+                            Ambil Langsung (Take Away)
+                        </span>
+                        <p class="text-slate-500 text-sm mt-1">Ongkir: <span class="font-semibold text-slate-700">Rp0</span></p>
+                    @endif
                 </div>
                 <div class="pt-4 border-t border-slate-100">
                     <p class="text-sm text-slate-500 font-medium mb-1">Total Belanja</p>
@@ -140,7 +149,7 @@
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="grid grid-cols-1 gap-8">
                     <!-- Shipping Address -->
                     <div class="bg-slate-50 p-5 rounded-xl border border-slate-100">
                         <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2">Alamat Pengiriman</h3>
@@ -156,20 +165,7 @@
                         </div>
                     </div>
 
-                    <!-- Billing Address -->
-                    <div class="bg-slate-50 p-5 rounded-xl border border-slate-100">
-                        <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2">Alamat Penagihan</h3>
-                        <div class="space-y-2 text-sm text-slate-600">
-                            <p><span class="font-semibold text-slate-700">Nama:</span> {{ $order->billingAddresses->first_name ?? '-' }} {{ $order->billingAddresses->last_name ?? '-' }}</p>
-                            <p><span class="font-semibold text-slate-700">No. HP:</span> {{ $order->billingAddresses->phone_number ?? '-' }}</p>
-                            <p><span class="font-semibold text-slate-700">Alamat:</span> {{ $order->billingAddresses->address ?? '-' }}</p>
-                            <p><span class="font-semibold text-slate-700">Suite/Apt:</span> {{ $order->billingAddresses->appartment_suite ?? '-' }}</p>
-                            <p><span class="font-semibold text-slate-700">Kota:</span> {{ $order->billingAddresses->city ?? '-' }}</p>
-                            <p><span class="font-semibold text-slate-700">Provinsi:</span> {{ $order->billingAddresses->province ?? '-' }}</p>
-                            <p><span class="font-semibold text-slate-700">Kode Pos:</span> {{ $order->billingAddresses->postal_code ?? '-' }}</p>
-                            <p><span class="font-semibold text-slate-700">Negara:</span> {{ $order->billingAddresses->country ?? '-' }}</p>
-                        </div>
-                    </div>
+
                 </div>
             </div>
         </div>

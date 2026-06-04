@@ -21,7 +21,7 @@ class UserLoginRequest extends FormRequest
     {
         return [
             'email' => 'required|email|max:100',
-            'password' => 'required|string|min:6',
+            'password' => 'required|string',
         ];
     }
 
@@ -31,7 +31,6 @@ class UserLoginRequest extends FormRequest
             'email.required' => 'Email harus diisi.',
             'email.email' => 'Format email tidak valid.',
             'password.required' => 'Password harus diisi.',
-            'password.min' => 'Password minimal 6 karakter.',
         ];
     }
 }

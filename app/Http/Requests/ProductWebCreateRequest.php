@@ -24,8 +24,9 @@ class ProductWebCreateRequest extends FormRequest
     {
         return [
             'name' => ['required', 'max:100'],
-            'collection_id' => ['required', 'exists:collections,id'], // Optional: Add existence check for better validation
-            'type_id' => ['required', 'exists:types,id'], // Optional: Add existence check
+            'collection_id' => ['required', 'exists:collections,id'],
+            'type_ids' => ['required', 'array', 'min:1'],
+            'type_ids.*' => ['exists:types,id'],
             'price' => ['required', 'numeric', 'min:0'],
             'stock' => ['required', 'integer', 'min:0'],
             'description' => ['required'],

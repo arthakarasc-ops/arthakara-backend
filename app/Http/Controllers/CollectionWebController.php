@@ -30,8 +30,10 @@ class CollectionWebController extends Controller
             'productVariants.colors'
         ])->where('collection_id', $collectionId);
 
-        if($typeId) {
-            $query->where('type_id', $typeId);
+        if ($typeId) {
+            $query->whereHas('types', function ($q) use ($typeId) {
+                $q->where('types.id', $typeId);
+            });
         }
 
         $products = $query->paginate(12);

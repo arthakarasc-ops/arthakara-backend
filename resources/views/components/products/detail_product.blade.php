@@ -52,9 +52,11 @@
                     <span class="px-3 py-1 bg-cyan-50 text-cyan-700 text-[10px] font-bold uppercase tracking-widest rounded-full border border-cyan-100">
                         {{ $product->collections->name ?? 'Collection' }}
                     </span>
+                    @foreach($product->types as $type)
                     <span class="px-3 py-1 bg-slate-50 text-slate-600 text-[10px] font-bold uppercase tracking-widest rounded-full border border-slate-100">
-                        {{ $product->types->name ?? 'Type' }}
+                        {{ $type->name }}
                     </span>
+                    @endforeach
                 </div>
                 
                 <h2 class="text-3xl font-extrabold text-slate-900 mb-2">{{ $product->name }}</h2>

@@ -92,13 +92,13 @@
                     </div>
 
                     <div>
-                        <label for="type_id" class="block text-slate-700 text-sm font-semibold mb-1.5">Product Type</label>
-                        <select id="type_id" name="type_id" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-cyan-500 transition-all cursor-pointer @error('type_id') border-red-500 @enderror" required>
-                            <option value="" disabled selected>Select a type</option>
+                        <label for="type_ids" class="block text-slate-700 text-sm font-semibold mb-1.5">Product Types (Select at least 1)</label>
+                        <select id="type_ids" name="type_ids[]" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-cyan-500 transition-all cursor-pointer @error('type_ids') border-red-500 @enderror" multiple required>
                             @foreach(\App\Models\Type::all() as $type)
-                                <option value="{{ $type->id }}" {{ old('type_id') == $type->id ? 'selected' : '' }}>{{ $type->name }}</option>
+                                <option value="{{ $type->id }}" {{ in_array($type->id, old('type_ids', [])) ? 'selected' : '' }}>{{ $type->name }}</option>
                             @endforeach
                         </select>
+                        <p class="text-[10px] text-slate-400 mt-1">Hold CTRL/CMD to select multiple</p>
                     </div>
                 </div>
             </div>

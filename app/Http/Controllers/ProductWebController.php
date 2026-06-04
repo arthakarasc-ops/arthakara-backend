@@ -46,20 +46,22 @@ class ProductWebController extends Controller
             $product = Product::create([
                 'name' => $data['name'],
                 'collection_id' => $data['collection_id'],
-                'type_id' => $data['type_id'],
                 'slug' => $slug,
                 'price' => $data['price'],
                 'stock' => $data['stock'] ?? 0,
                 'description' => $data['description'],
             ]);
 
-            // Create product usage image
             $product->productUsageImages()->create([
                 'product_id' => $product->id,
                 'image_url' => $uploadedFileUrl,
             ]);
 
-            // 🔥 Create variant with selected color
+            // 🔥 Attach types
+            if ($request->has('type_ids') && !empty($request->type_ids)) {
+                $product->types()->sync($request->type_ids);
+            }
+
             if ($request->has('color_ids') && !empty($request->color_ids)) {
                 foreach ($request->color_ids as $colorId) {
                     ProductVariant::create([
@@ -96,7 +98,9 @@ class ProductWebController extends Controller
         }
 
         if ($typeId) {
-            $query->where('type_id', $typeId);
+            $query->whereHas('types', function ($q) use ($typeId) {
+                $q->where('types.id', $typeId);
+            });
         }
 
         $products = $query->paginate(12);
@@ -170,7 +174,8 @@ class ProductWebController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:100',
                 'collection_id' => 'required|integer|exists:collections,id',
-                'type_id' => 'required|integer|exists:types,id',
+                'type_ids' => 'required|array|min:1',
+                'type_ids.*' => 'exists:types,id',
                 'price' => 'required|numeric|min:0',
                 'stock' => 'required|integer|min:0',
                 'description' => 'required|string',
@@ -189,7 +194,6 @@ class ProductWebController extends Controller
             $product->update([
                 'name' => $validated['name'],
                 'collection_id' => $validated['collection_id'],
-                'type_id' => $validated['type_id'],
                 // Slug TIDAK diupdate di sini agar link di FE tidak mati (404)
                 'price' => $validated['price'],
                 'stock' => $validated['stock'],
@@ -257,6 +261,13 @@ class ProductWebController extends Controller
                 }
             } else {
                 $product->variants()->delete();
+            }
+
+            // 🔥 Sync types
+            if ($request->has('type_ids') && !empty($request->type_ids)) {
+                $product->types()->sync($request->type_ids);
+            } else {
+                $product->types()->detach();
             }
 
             // 🔥 Sync scents

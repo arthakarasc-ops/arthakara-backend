@@ -53,7 +53,7 @@ class RajaOngkirController extends Controller
         $request->validate([
             'destination' => 'required|numeric',
             'weight' => 'required|numeric|min:1',
-            'courier' => 'required|string|in:jne,jnt,ide'
+            'courier' => 'required|string|in:jne,jnt,tiki'
         ]);
 
         try {

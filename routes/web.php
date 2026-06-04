@@ -131,4 +131,15 @@ Route::middleware(['is_admin_web'])->prefix('admin')->group(function () {
         Route::put('/status/{statusId}/update', 'updateStatus')->name('statuses.update');
         Route::delete('/status/{statusId}/delete', 'deleteStatus')->name('statuses.delete');
     });
+
+    // Helper Route to run migrations on cPanel
+    Route::get('/run-migration', function () {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+            return "Migration success: <br><pre>" . \Illuminate\Support\Facades\Artisan::output() . "</pre>";
+        } catch (\Exception $e) {
+            return "Migration failed: " . $e->getMessage();
+        }
+    })->name('admin.migrate');
 });
+

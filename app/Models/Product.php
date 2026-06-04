@@ -17,8 +17,7 @@ class Product extends Model
         'stock',
         'weight',
         'description',
-        'collection_id',
-        'type_id'
+        'collection_id'
     ];
 
     public function productUsageImages(): HasMany {
@@ -29,8 +28,8 @@ class Product extends Model
         return $this->belongsTo(Collection::class, 'collection_id');
     }
 
-    public function types(): BelongsTo {
-        return $this->belongsTo(Type::class, 'type_id');
+    public function types() {
+        return $this->belongsToMany(Type::class, 'product_types');
     }
 
     // ✅ VARIANT = warna + stock

@@ -21,7 +21,7 @@ class UserRegisterRequest extends FormRequest
     {
         return [
             'email' => 'required|email|max:100',
-            'password' => 'required|string|min:6',
+            'password' => 'required|string',
             'phone_number' => 'required|string|max:20',
             'nickname' => 'required|string|max:100',
         ];
@@ -34,7 +34,6 @@ class UserRegisterRequest extends FormRequest
             'email.email' => 'Format email tidak valid.',
             'email.max' => 'Email maksimal 100 karakter.',
             'password.required' => 'Password harus diisi.',
-            'password.min' => 'Password minimal 6 karakter.',
             'phone_number.required' => 'Nomor telepon harus diisi.',
             'phone_number.max' => 'Nomor telepon maksimal 20 karakter.',
             'nickname.required' => 'Nama panggilan harus diisi.',
