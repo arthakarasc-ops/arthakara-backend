@@ -142,3 +142,14 @@ Route::middleware(['is_admin_web'])->prefix('admin')->group(function () {
         }
     })->name('admin.migrate');
 });
+
+// ⚠️ TEMPORARY - Log viewer untuk debugging
+Route::get('/view-logs', function () {
+    $logPath = storage_path('logs/laravel.log');
+    if (!file_exists($logPath)) {
+        return 'Log file tidak ditemukan.';
+    }
+    $lines = file($logPath);
+    $lastLines = array_slice($lines, -100); // Ambil 100 baris terakhir
+    return '<pre>' . implode('', $lastLines) . '</pre>';
+});
