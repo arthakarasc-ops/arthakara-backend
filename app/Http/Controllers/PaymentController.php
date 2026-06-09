@@ -6,28 +6,26 @@ use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\ProductVariant;
 use App\Services\FonnteService;
+use App\Services\DokuService;
 use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
+    protected DokuService $dokuService;
+
+    public function __construct(DokuService $dokuService)
+    {
+        $this->dokuService = $dokuService;
+    }
+
     /**
      * POST /api/pay
-     * Buat Snap Token Midtrans dari order yang sudah ada
+     * Buat Link Pembayaran Doku Checkout dari order yang sudah ada
      */
     public function createTransaction(Request $request)
     {
         $request->validate([
             'order_id' => 'required|integer|exists:orders,id'
-        ]);
-
-        \Midtrans\Config::$serverKey    = config('midtrans.serverKey');
-        \Midtrans\Config::$isProduction = config('midtrans.isProduction');
-        \Midtrans\Config::$isSanitized  = true;
-        \Midtrans\Config::$is3ds        = true;
-
-        Log::info('Midtrans Config used:', [
-            'server_key' => substr(\Midtrans\Config::$serverKey, 0, 10) . '...',
-            'is_production' => \Midtrans\Config::$isProduction
         ]);
 
         // Ambil order beserta relasi
@@ -46,24 +44,20 @@ class PaymentController extends Controller
             return response()->json(['message' => 'Order ini sudah lunas.'], 400);
         }
 
-        // Generate unique Midtrans order ID
-        $midtransOrderId = 'MID-' . $order->id . '-' . time();
+        // Generate unique Doku invoice number
+        // Max 30 karakter jika Credit Card aktif di Doku
+        $dokuInvoiceNumber = 'INV-' . $order->id . '-' . time();
 
-        $order->midtrans_order_id = $midtransOrderId;
-        $order->payment_status    = 'pending';
-        $order->save();
-
-        // ✅ Item details dari order items
+        // ✅ Item details dari order items format Doku
         $items = [];
         foreach ($order->orderItems as $item) {
             $productName = optional(optional($item->productVariants)->product)->name ?? 'Product';
             $unitPrice   = (int) round($item->price_at_purchase);
 
             $items[] = [
-                'id'       => 'ITEM-' . $item->product_variant_id,
+                'name'     => mb_substr($productName, 0, 50), // max 50 char Doku
                 'price'    => $unitPrice,
                 'quantity' => $item->quantity,
-                'name'     => mb_substr($productName, 0, 50), // max 50 char Midtrans
             ];
         }
 
@@ -75,126 +69,127 @@ class PaymentController extends Controller
                 : 'Ongkos Kirim - ' . $order->shippingMethods->name;
                 
             $items[] = [
-                'id'       => 'SHIPPING',
+                'name'     => substr($shippingName, 0, 50),
                 'price'    => $shippingPrice,
                 'quantity' => 1,
-                'name'     => substr($shippingName, 0, 50),
             ];
         }
 
-        $params = [
-            'transaction_details' => [
-                'order_id'     => $midtransOrderId,
-                'gross_amount' => (int) $order->total_price,
+        $dokuPayload = [
+            'order' => [
+                'invoice_number' => $dokuInvoiceNumber,
+                'amount' => (int) $order->total_price,
+                'currency' => 'IDR',
+                'callback_url' => config('app.frontend_url', 'https://arthakara.id') . '/orders',
+                'line_items' => $items,
             ],
-            'item_details'    => $items,
-            'customer_details' => [
-                'first_name' => $order->users->name ?? 'User',
-                'email'      => $order->users->email ?? 'user@email.com',
-                'phone'      => $order->users->phone_number ?? '',
+            'payment' => [
+                'payment_due_date' => 60, // 60 menit
+            ],
+            'customer' => [
+                'name' => $order->users->name ?? 'User',
+                'email' => $order->users->email ?? 'user@email.com',
             ],
         ];
 
-        try {
-            $snapToken = \Midtrans\Snap::getSnapToken($params);
+        $dokuResponse = $this->dokuService->createCheckout($dokuPayload);
+
+        if ($dokuResponse && isset($dokuResponse['payment']['url'])) {
+            $paymentUrl = $dokuResponse['payment']['url'];
+
+            // Update order info
+            $order->doku_invoice_number = $dokuInvoiceNumber;
+            $order->doku_payment_url = $paymentUrl;
+            $order->payment_status    = 'pending';
+            $order->save();
 
             return response()->json([
-                'snap_token'       => $snapToken,
-                'midtrans_order_id' => $midtransOrderId,
-                'isSuccess'        => true,
+                'payment_url'         => $paymentUrl,
+                'doku_invoice_number' => $dokuInvoiceNumber,
+                'isSuccess'           => true,
             ]);
-        } catch (\Exception $e) {
-            Log::error('Midtrans Snap token error: ' . $e->getMessage());
-            return response()->json([
-                'message'   => 'Gagal membuat transaksi Midtrans.',
-                'error'     => $e->getMessage(),
-                'isSuccess' => false,
-            ], 500);
         }
+
+        return response()->json([
+            'message'   => 'Gagal membuat transaksi Doku.',
+            'isSuccess' => false,
+        ], 500);
     }
 
     /**
-     * POST /api/midtrans-callback
-     * Dipanggil oleh Midtrans setelah transaksi selesai
+     * POST /api/doku-callback
+     * Dipanggil oleh Doku setelah transaksi selesai
      */
-    public function callback(Request $request)
+    public function dokuCallback(Request $request)
     {
-        $serverKey = config('midtrans.serverKey');
+        $signature = $request->header('Signature') ?? $request->header('X-Signature') ?? '';
+        $clientId = $request->header('Client-Id') ?? '';
+        $requestId = $request->header('Request-Id') ?? '';
+        $timestamp = $request->header('Request-Timestamp') ?? '';
 
-        // Validasi signature Midtrans
-        $signature = hash("sha512",
-            $request->order_id .
-            $request->status_code .
-            $request->gross_amount .
-            $serverKey
+        Log::info('Doku Callback Received:', [
+            'headers' => [
+                'Signature' => $signature,
+                'Client-Id' => $clientId,
+                'Request-Id' => $requestId,
+                'Request-Timestamp' => $timestamp,
+            ],
+            'body' => $request->all()
+        ]);
+
+        $isValid = $this->dokuService->verifyCallbackSignature(
+            $request->getContent(),
+            $signature,
+            $clientId,
+            $requestId,
+            $timestamp,
+            '/api/doku-callback'
         );
 
-        if ($signature !== $request->signature_key) {
-            Log::warning('Midtrans callback: Invalid signature', ['order_id' => $request->order_id]);
-            return response()->json(['message' => 'Invalid signature'], 403);
+        if (!$isValid) {
+            return response()->json(['message' => 'Invalid signature'], 400);
         }
 
-        // Cari order berdasarkan midtrans_order_id
+        $invoiceNumber = $request->input('order.invoice_number');
+        $transactionStatus = $request->input('transaction.status');
+
         $order = Order::with(['orderItems', 'shippingMethods', 'shippingAddresses', 'users'])
-            ->where('midtrans_order_id', $request->order_id)
+            ->where('doku_invoice_number', $invoiceNumber)
             ->first();
 
         if (!$order) {
-            Log::warning('Midtrans callback: Order tidak ditemukan', ['midtrans_order_id' => $request->order_id]);
+            Log::warning('Doku callback: Order tidak ditemukan', ['doku_invoice_number' => $invoiceNumber]);
             return response()->json(['message' => 'Order tidak ditemukan'], 404);
         }
 
         $previousStatus = $order->payment_status;
 
-        switch ($request->transaction_status) {
+        if (strtoupper($transactionStatus) === 'SUCCESS') {
+            if ($previousStatus !== 'paid') {
+                $order->payment_status = 'paid';
+                $order->status_id      = 2; // Processing (Sedang Dikemas)
 
-            case 'settlement':
-            case 'capture': // Untuk credit card
-                if ($previousStatus !== 'paid') {
-                    $order->payment_status = 'paid';
-                    $order->status_id      = 2; // Processing (Sedang Dikemas)
-
-                    // ✅ Kurangi stok produk
-                    foreach ($order->orderItems as $item) {
-                        $variant = ProductVariant::with('product')->find($item->product_variant_id);
-                        if ($variant && $variant->product) {
-                            $variant->product->stock = max(0, $variant->product->stock - $item->quantity);
-                            $variant->product->save();
-                        }
-                    }
-
-                    // ✅ Notifikasi WA ke Admin jika Delivery (Bukan Take Away)
-                    if ($order->shippingMethods && $order->shippingMethods->name !== 'Take Away') {
-                        $this->sendNewOrderNotificationToAdmin($order);
+                // ✅ Kurangi stok produk
+                foreach ($order->orderItems as $item) {
+                    $variant = ProductVariant::with('product')->find($item->product_variant_id);
+                    if ($variant && $variant->product) {
+                        $variant->product->stock = max(0, $variant->product->stock - $item->quantity);
+                        $variant->product->save();
                     }
                 }
-                break;
 
-            case 'pending':
-                $order->payment_status = 'pending';
-                break;
-
-            case 'expire':
-                // ✅ Kembalikan stok jika sebelumnya sudah terpotong
-                if ($previousStatus === 'paid') {
-                    $this->restoreStock($order);
+                // ✅ Notifikasi WA ke Admin jika Delivery (Bukan Take Away)
+                if ($order->shippingMethods && $order->shippingMethods->name !== 'Take Away') {
+                    $this->sendNewOrderNotificationToAdmin($order);
                 }
-                $order->payment_status = 'expired';
-                $order->status_id      = 5; // Cancelled
-                break;
-
-            case 'cancel':
-                // ✅ Kembalikan stok jika sebelumnya sudah terpotong
-                if ($previousStatus === 'paid') {
-                    $this->restoreStock($order);
-                }
-                $order->payment_status = 'canceled';
-                $order->status_id      = 5; // Cancelled
-                break;
-
-            case 'deny':
-                $order->payment_status = 'failed';
-                break;
+            }
+        } else if (strtoupper($transactionStatus) === 'FAILED') {
+            // ⚠️ Per Doku best practice: FAILED diabaikan karena customer
+            // bisa ganti metode pembayaran di checkout page yang sama.
+            // Jangan ubah status order.
+            Log::info('Doku callback: FAILED status received, ignoring.', [
+                'doku_invoice_number' => $invoiceNumber
+            ]);
         }
 
         $order->save();

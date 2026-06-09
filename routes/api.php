@@ -94,10 +94,10 @@ Route::post('/image/upload', [ImageController::class, 'uploadImage']);
 
 /*
 |--------------------------------------------------------------------------
-| PAYMENT (Callback - tanpa auth, dipanggil oleh Midtrans)
+| PAYMENT (Callback - tanpa auth, dipanggil oleh Doku)
 |--------------------------------------------------------------------------
 */
-Route::post('/midtrans-callback', [PaymentController::class, 'callback']);
+Route::post('/doku-callback', [PaymentController::class, 'dokuCallback']);
 
 /*
 |--------------------------------------------------------------------------

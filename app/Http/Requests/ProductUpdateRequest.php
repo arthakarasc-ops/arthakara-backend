@@ -27,7 +27,7 @@ class ProductUpdateRequest extends FormRequest
             'collection_id' => ['required', 'exists:collections,id'],
             'type_ids' => ['required', 'array', 'min:1'],
             'type_ids.*' => ['exists:types,id'],
-            'slug' => ['required', 'max:100'],
+            'slug' => ['required', 'max:100', 'unique:products,slug,' . $this->route('productId')],
             'price' => ['required', 'numeric', 'min:0'],
             'description' => ['required'],
             'image_url' => ['required', 'max:255'],

@@ -13,15 +13,17 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('users')->insert([
-            'email' => 'ardhaneez@gmail.com',
-            'password' => bcrypt('admin123'),
-            'full_name' => 'Roccia Admin',
-            'nickname' => 'Admin',
-            'phone_number' => '08123456789',
-            'is_admin' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        DB::table('users')->updateOrInsert(
+            ['email' => 'arthakarasc@gmail.com'],
+            [
+                'password' => bcrypt('arthakara123'),
+                'full_name' => 'Arthakara Admin',
+                'nickname' => 'Admin',
+                'phone_number' => '08123456789',
+                'is_admin' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
     }
 }

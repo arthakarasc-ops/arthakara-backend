@@ -23,6 +23,8 @@ class Order extends Model
         'status_id',
         'tracking_number',
         'midtrans_order_id',
+        'doku_invoice_number',
+        'doku_payment_url',
         'payment_status',
         'tanggal_lahir',
         'courier_code',

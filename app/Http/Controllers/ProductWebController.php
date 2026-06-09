@@ -38,7 +38,7 @@ class ProductWebController extends Controller
             $slug = Str::slug($data['name']);
             $originalSlug = $slug;
             $count = 1;
-            while (Product::where('slug', $slug)->exists()) {
+            while (Product::withTrashed()->where('slug', $slug)->exists()) {
                 $slug = $originalSlug . '-' . $count++;
             }
 

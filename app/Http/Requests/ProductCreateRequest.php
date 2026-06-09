@@ -27,7 +27,7 @@ class ProductCreateRequest extends FormRequest
             'collection_id' => ['required', 'exists:collections,id'],
             'type_ids' => ['required', 'array', 'min:1'],
             'type_ids.*' => ['exists:types,id'],
-            'slug' => ['required', 'max:100'],
+            'slug' => ['required', 'max:100', 'unique:products,slug'],
             'price' => ['required', 'numeric', 'min:0'],
             'description' => ['required'],
             'image' => ['required', 'max:255'],

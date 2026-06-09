@@ -57,9 +57,9 @@ class OrderWebController extends Controller
 
         $order = Order::with(['shippingAddresses', 'users'])->findOrFail($orderId);
 
-        // Validasi midtrans dimatikan sementara agar admin bisa proses order via WA
+        // Validasi pembayaran dimatikan sementara agar admin bisa proses order via WA
         // if ($order->payment_status !== 'paid' && !in_array($request->status_id, [1, 5])) {
-        //     return redirect()->back()->with('error', 'Gagal memperbarui status: Pesanan ini belum lunas dibayar via Midtrans!');
+        //     return redirect()->back()->with('error', 'Gagal memperbarui status: Pesanan ini belum lunas!');
         // }
 
         $order->status_id = $request->status_id;
