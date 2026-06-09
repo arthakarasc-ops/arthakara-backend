@@ -227,18 +227,3 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 });
 
-// Temporary Route to run migrations from browser (delete after use)
-Route::get('/run-migration-temp', function () {
-    try {
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        return response()->json([
-            'message' => 'Migration ran successfully!',
-            'output' => \Illuminate\Support\Facades\Artisan::output()
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'message' => 'Migration failed!',
-            'error' => $e->getMessage()
-        ], 500);
-    }
-});
