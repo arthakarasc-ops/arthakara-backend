@@ -231,11 +231,22 @@ Route::get('/debug-doku', function () {
     \Illuminate\Support\Facades\Artisan::call('config:clear');
     \Illuminate\Support\Facades\Artisan::call('cache:clear');
     
+    // Read last 100 lines of Laravel log if it exists
+    $logPath = storage_path('logs/laravel.log');
+    $logContent = [];
+    if (file_exists($logPath)) {
+        $lines = file($logPath);
+        $logContent = array_slice($lines, -100);
+        // Clean line endings
+        $logContent = array_map('trim', $logContent);
+    }
+    
     return response()->json([
         'message' => 'Cache cleared successfully!',
         'client_id' => config('doku.client_id'),
         'shared_key_set' => !empty(config('doku.shared_key')),
         'is_production' => config('doku.is_production'),
         'api_url' => config('doku.api_url'),
+        'latest_logs' => $logContent
     ]);
 });
