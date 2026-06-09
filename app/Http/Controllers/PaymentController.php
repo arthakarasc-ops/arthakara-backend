@@ -94,8 +94,8 @@ class PaymentController extends Controller
 
         $dokuResponse = $this->dokuService->createCheckout($dokuPayload);
 
-        if ($dokuResponse && isset($dokuResponse['payment']['url'])) {
-            $paymentUrl = $dokuResponse['payment']['url'];
+        if ($dokuResponse && isset($dokuResponse['response']['payment']['url'])) {
+            $paymentUrl = $dokuResponse['response']['payment']['url'];
 
             // Update order info
             $order->doku_invoice_number = $dokuInvoiceNumber;
