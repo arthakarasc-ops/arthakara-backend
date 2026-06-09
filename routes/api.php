@@ -226,4 +226,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
     });
 });
-
+// Temporary debug route (delete after use)
+Route::get('/debug-doku', function () {
+    \Illuminate\Support\Facades\Artisan::call('config:clear');
+    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+    
+    return response()->json([
+        'message' => 'Cache cleared successfully!',
+        'client_id' => config('doku.client_id'),
+        'shared_key_set' => !empty(config('doku.shared_key')),
+        'is_production' => config('doku.is_production'),
+        'api_url' => config('doku.api_url'),
+    ]);
+});
