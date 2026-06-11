@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\Scent;
 use App\Models\Status;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,11 +42,69 @@ class OrderWebController extends Controller
             'statuses'
         ])->findOrFail($orderId);
 
+        // Kumpulkan semua scent ID dari seluruh order items dalam satu pass
+        $allScentIds = [];
+        foreach ($order->orderItems as $item) {
+            $raw = $item->getRawOriginal('scents');
+
+            if (empty($raw) || $raw === 'null') {
+                continue;
+            }
+
+            // Decode: bisa berupa array (cast), JSON string biasa, atau double-encoded
+            if (is_array($item->scents)) {
+                $ids = $item->scents;
+            } else {
+                $decoded = json_decode($raw, true);
+                if (is_string($decoded)) {
+                    $decoded = json_decode($decoded, true); // double-encoded fallback
+                }
+                $ids = is_array($decoded) ? $decoded : [];
+            }
+
+            foreach ($ids as $id) {
+                $intId = (int) $id;
+                if ($intId > 0) {
+                    $allScentIds[] = $intId;
+                }
+            }
+        }
+
+        // Satu query untuk semua scent yang dibutuhkan — key by ID
+        $scentsMap = Scent::whereIn('id', array_unique($allScentIds))
+            ->get()
+            ->keyBy('id');
+
+        // Pasang resolved scent names ke setiap order item
+        foreach ($order->orderItems as $item) {
+            $raw = $item->getRawOriginal('scents');
+
+            if (empty($raw) || $raw === 'null') {
+                $item->resolved_scent_names = collect();
+                continue;
+            }
+
+            if (is_array($item->scents)) {
+                $ids = $item->scents;
+            } else {
+                $decoded = json_decode($raw, true);
+                if (is_string($decoded)) {
+                    $decoded = json_decode($decoded, true);
+                }
+                $ids = is_array($decoded) ? $decoded : [];
+            }
+
+            $item->resolved_scent_names = collect($ids)
+                ->map(fn($id) => $scentsMap->get((int) $id))
+                ->filter()
+                ->pluck('name');
+        }
+
         $statuses = Status::all();
 
         return view('components.orders.detail_order', [
-            'order' => $order,
-            'statuses' => $statuses
+            'order'    => $order,
+            'statuses' => $statuses,
         ]);
     }
 
