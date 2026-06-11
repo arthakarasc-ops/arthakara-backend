@@ -179,39 +179,6 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         @foreach ($order->orderItems as $item)
-            @php
-                /*
-                 * Robust scent resolver:
-                 * Kolom order_items.scents adalah JSON column yang di-cast ke array.
-                 * Data mentah dari DB bisa berupa:
-                 *   (a) null         → belum diisi
-                 *   (b) array [1,2]  → sudah di-cast dengan benar oleh Eloquent
-                 *   (c) string "[1,2]" → double-encoded / data lama tersimpan sbg string
-                 *   (d) string "null"  → JSON null tersimpan sebagai string
-                 */
-                $rawScents = $item->getRawOriginal('scents'); // ambil nilai mentah dari DB
-                if (is_null($rawScents) || $rawScents === 'null' || $rawScents === '') {
-                    $scentIds = [];
-                } elseif (is_array($item->scents)) {
-                    // Cast berjalan normal → sudah jadi array
-                    $scentIds = $item->scents;
-                } else {
-                    // Fallback: decode manual jika cast gagal atau double-encoded
-                    $decoded = json_decode($rawScents, true);
-                    // Jika hasil decode masih string (double-encoded), decode sekali lagi
-                    if (is_string($decoded)) {
-                        $decoded = json_decode($decoded, true);
-                    }
-                    $scentIds = is_array($decoded) ? $decoded : [];
-                }
-                // Pastikan semua elemen adalah integer valid
-                $scentIds   = array_filter(array_map('intval', $scentIds), fn($id) => $id > 0);
-                $scentNames = count($scentIds) > 0
-                    ? \App\Models\Scent::whereIn('id', array_values($scentIds))->pluck('name')
-                    : collect();
-            @endphp
-            {{-- DEBUG: hapus baris ini setelah scent tampil dengan benar --}}
-            {!! '<!-- DEBUG item #' . $item->id . ' | raw=' . e($item->getRawOriginal('scents')) . ' | ids=' . implode(',', $scentIds) . ' | names=' . $scentNames->implode(',') . ' -->' !!}
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:border-cyan-200 transition duration-300 flex flex-col overflow-hidden group">
                 <div class="relative h-56 bg-slate-100 overflow-hidden">
                     <img src="{{ $item->productVariants->image_url ?? 'https://via.placeholder.com/150' }}"
@@ -240,15 +207,15 @@
                             <p class="text-xs text-slate-500 font-medium mb-1.5 flex items-center gap-1">
                                 <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 3c-4.418 0-8 3.582-8 8 0 3.037 1.695 5.677 4.188 7.042L9 21h6l.812-2.958C18.305 16.677 20 14.037 20 11c0-4.418-3.582-8-8-8z"/>
+                                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
                                 </svg>
                                 Wangi:
                             </p>
-                            @if($scentNames->isNotEmpty())
+                            @if($item->resolved_scent_names && $item->resolved_scent_names->isNotEmpty())
                                 <div class="flex flex-wrap gap-1">
-                                    @foreach($scentNames as $scent)
+                                    @foreach($item->resolved_scent_names as $scentName)
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-100">
-                                            {{ $scent }}
+                                            {{ $scentName }}
                                         </span>
                                     @endforeach
                                 </div>
