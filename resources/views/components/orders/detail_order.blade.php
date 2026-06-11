@@ -179,6 +179,13 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         @foreach ($order->orderItems as $item)
+            @php
+                // Resolve scent IDs ke nama-nama scent
+                $scentIds   = is_array($item->scents) ? $item->scents
+                            : (is_string($item->scents) ? json_decode($item->scents, true) : []);
+                $scentIds   = $scentIds ?? [];
+                $scentNames = \App\Models\Scent::whereIn('id', $scentIds)->pluck('name');
+            @endphp
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:border-cyan-200 transition duration-300 flex flex-col overflow-hidden group">
                 <div class="relative h-56 bg-slate-100 overflow-hidden">
                     <img src="{{ $item->productVariants->image_url ?? 'https://via.placeholder.com/150' }}"
@@ -191,9 +198,47 @@
                         <h3 class="text-lg font-bold text-slate-800 mb-2 leading-tight">
                             {{ $item->productVariants->product->name ?? 'Unnamed Product' }}
                         </h3>
-                        <div class="inline-block bg-slate-100 px-3 py-1 rounded-full text-xs font-semibold text-slate-600 mb-4">
+
+                        {{-- Warna / Color --}}
+                        @if($item->productVariants && $item->productVariants->color)
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="text-xs text-slate-500 font-medium">Warna:</span>
+                                <span class="text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full">
+                                    {{ $item->productVariants->color->name }}
+                                </span>
+                            </div>
+                        @endif
+
+                        {{-- Wangi / Scent --}}
+                        <div class="mb-3">
+                            <p class="text-xs text-slate-500 font-medium mb-1.5 flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 3c-4.418 0-8 3.582-8 8 0 3.037 1.695 5.677 4.188 7.042L9 21h6l.812-2.958C18.305 16.677 20 14.037 20 11c0-4.418-3.582-8-8-8z"/>
+                                </svg>
+                                Wangi:
+                            </p>
+                            @if($scentNames->isNotEmpty())
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach($scentNames as $scent)
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-100">
+                                            {{ $scent }}
+                                        </span>
+                                    @endforeach
+                                </div>
+                            @else
+                                <span class="text-xs text-slate-400 italic">Tidak ada pilihan wangi</span>
+                            @endif
+                        </div>
+
+                        <div class="inline-block bg-slate-100 px-3 py-1 rounded-full text-xs font-semibold text-slate-600 mb-3">
                             Qty: {{ $item->quantity }}
                         </div>
+
+                        {{-- Harga satuan --}}
+                        <p class="text-xs text-slate-400">
+                            Harga satuan: <span class="font-semibold text-slate-600">Rp{{ number_format($item->price_at_purchase, 0, ',', '.') }}</span>
+                        </p>
                     </div>
                     <div class="pt-4 border-t border-slate-100 flex justify-between items-center">
                         <span class="text-sm font-medium text-slate-500">Subtotal</span>

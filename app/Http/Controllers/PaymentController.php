@@ -20,7 +20,6 @@ class PaymentController extends Controller
 
     /**
      * POST /api/pay
-     * Buat Link Pembayaran Doku Checkout dari order yang sudah ada
      */
     public function createTransaction(Request $request)
     {
@@ -39,16 +38,12 @@ class PaymentController extends Controller
             return response()->json(['message' => 'Order tidak ditemukan'], 404);
         }
 
-        // Cegah double-pay jika sudah paid
         if ($order->payment_status === 'paid') {
             return response()->json(['message' => 'Order ini sudah lunas.'], 400);
         }
 
-        // Generate unique Doku invoice number
-        // Max 30 karakter jika Credit Card aktif di Doku
         $dokuInvoiceNumber = 'INV-' . $order->id . '-' . time();
 
-        // ✅ Item details dari order items format Doku
         $items = [];
         foreach ($order->orderItems as $item) {
             $productName = optional(optional($item->productVariants)->product)->name ?? 'Product';

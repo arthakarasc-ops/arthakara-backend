@@ -34,6 +34,7 @@ class OrderWebController extends Controller
         $order = Order::with([
             'users',
             'orderItems.productVariants.product',
+            'orderItems.productVariants.color',
             'shippingAddresses',
             'billingAddresses',
             'shippingMethods',
