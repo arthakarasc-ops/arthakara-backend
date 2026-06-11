@@ -180,12 +180,38 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         @foreach ($order->orderItems as $item)
             @php
-                // Resolve scent IDs ke nama-nama scent
-                $scentIds   = is_array($item->scents) ? $item->scents
-                            : (is_string($item->scents) ? json_decode($item->scents, true) : []);
-                $scentIds   = $scentIds ?? [];
-                $scentNames = \App\Models\Scent::whereIn('id', $scentIds)->pluck('name');
+                /*
+                 * Robust scent resolver:
+                 * Kolom order_items.scents adalah JSON column yang di-cast ke array.
+                 * Data mentah dari DB bisa berupa:
+                 *   (a) null         → belum diisi
+                 *   (b) array [1,2]  → sudah di-cast dengan benar oleh Eloquent
+                 *   (c) string "[1,2]" → double-encoded / data lama tersimpan sbg string
+                 *   (d) string "null"  → JSON null tersimpan sebagai string
+                 */
+                $rawScents = $item->getRawOriginal('scents'); // ambil nilai mentah dari DB
+                if (is_null($rawScents) || $rawScents === 'null' || $rawScents === '') {
+                    $scentIds = [];
+                } elseif (is_array($item->scents)) {
+                    // Cast berjalan normal → sudah jadi array
+                    $scentIds = $item->scents;
+                } else {
+                    // Fallback: decode manual jika cast gagal atau double-encoded
+                    $decoded = json_decode($rawScents, true);
+                    // Jika hasil decode masih string (double-encoded), decode sekali lagi
+                    if (is_string($decoded)) {
+                        $decoded = json_decode($decoded, true);
+                    }
+                    $scentIds = is_array($decoded) ? $decoded : [];
+                }
+                // Pastikan semua elemen adalah integer valid
+                $scentIds   = array_filter(array_map('intval', $scentIds), fn($id) => $id > 0);
+                $scentNames = count($scentIds) > 0
+                    ? \App\Models\Scent::whereIn('id', array_values($scentIds))->pluck('name')
+                    : collect();
             @endphp
+            {{-- DEBUG: hapus baris ini setelah scent tampil dengan benar --}}
+            {!! '<!-- DEBUG item #' . $item->id . ' | raw=' . e($item->getRawOriginal('scents')) . ' | ids=' . implode(',', $scentIds) . ' | names=' . $scentNames->implode(',') . ' -->' !!}
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:border-cyan-200 transition duration-300 flex flex-col overflow-hidden group">
                 <div class="relative h-56 bg-slate-100 overflow-hidden">
                     <img src="{{ $item->productVariants->image_url ?? 'https://via.placeholder.com/150' }}"
