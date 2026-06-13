@@ -128,10 +128,10 @@
 
             <!-- Attributes Card -->
             <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
-                <h2 class="text-lg font-bold text-slate-800">Attributes <span class="text-rose-500 text-xs font-normal">*Required</span></h2>
+                <h2 class="text-lg font-bold text-slate-800">Attributes</h2>
                 
                 <div>
-                    <label for="color_ids" class="block text-slate-700 text-sm font-semibold mb-1.5">Colors (Select at least 1)</label>
+                    <label for="color_ids" class="block text-slate-700 text-sm font-semibold mb-1.5">Colors (Select at least 1) <span class="text-rose-500 text-xs font-normal">*Required</span></label>
                     <select id="color_ids" name="color_ids[]" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-cyan-500 transition-all cursor-pointer @error('color_ids') border-red-500 @enderror" multiple required>
                         @foreach(\App\Models\Color::all() as $color)
                             <option value="{{ $color->id }}" {{ in_array($color->id, old('color_ids', $product->variants ? $product->variants->pluck('color_id')->toArray() : [])) ? 'selected' : '' }}>{{ $color->name }}</option>
@@ -140,12 +140,13 @@
                 </div>
 
                 <div>
-                    <label for="scent_ids" class="block text-slate-700 text-sm font-semibold mb-1.5">Aroma/Scents (Select at least 1)</label>
-                    <select id="scent_ids" name="scent_ids[]" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-cyan-500 transition-all cursor-pointer @error('scent_ids') border-red-500 @enderror" multiple required>
+                    <label for="scent_ids" class="block text-slate-700 text-sm font-semibold mb-1.5">Aroma/Scents <span class="text-slate-400 text-xs font-normal">(Optional)</span></label>
+                    <select id="scent_ids" name="scent_ids[]" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-cyan-500 transition-all cursor-pointer @error('scent_ids') border-red-500 @enderror" multiple>
                         @foreach(\App\Models\Scent::all() as $scent)
                             <option value="{{ $scent->id }}" {{ in_array($scent->id, old('scent_ids', $product->scents ? $product->scents->pluck('id')->toArray() : [])) ? 'selected' : '' }}>{{ $scent->name }}</option>
                         @endforeach
                     </select>
+                    <p class="text-[10px] text-slate-400 mt-1">Hold CTRL/CMD to select multiple</p>
                 </div>
             </div>
 
