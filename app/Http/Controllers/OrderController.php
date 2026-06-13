@@ -274,7 +274,7 @@ class OrderController extends Controller
 
                 $validCost = null;
                 foreach ($costs as $cost) {
-                    if ($cost['service'] === $data['courier_service']) {
+                    if (strtolower(trim($cost['service'])) === strtolower(trim($data['courier_service']))) {
                         $validCost = $cost['cost'];
                         break;
                     }
