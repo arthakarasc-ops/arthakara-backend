@@ -82,8 +82,8 @@ class PaymentController extends Controller
                 'payment_due_date' => 60, // 60 menit
             ],
             'customer' => [
-                'name' => $order->users->name ?? 'User',
-                'email' => $order->users->email ?? 'user@email.com',
+                'name' => $order->users?->name ?? 'User',
+                'email' => $order->users?->email ?? 'user@email.com',
             ],
         ];
 
@@ -213,8 +213,8 @@ class PaymentController extends Controller
     {
         $adminPhone = '087784488639'; // Nomor tujuan WA Admin
         
-        $customerName = $order->shippingAddresses->first_name ?? ($order->users->full_name ?? 'Customer');
-        $customerPhone = $order->shippingAddresses->phone_number ?? ($order->users->phone_number ?? '-');
+        $customerName = $order->shippingAddresses->first_name ?? ($order->users?->full_name ?? 'Customer');
+        $customerPhone = $order->shippingAddresses->phone_number ?? ($order->users?->phone_number ?? '-');
         $address = $order->shippingAddresses->address ?? '-';
         
         $message = "Halo Admin,\n\n"

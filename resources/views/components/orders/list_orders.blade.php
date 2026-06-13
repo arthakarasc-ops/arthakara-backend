@@ -32,7 +32,7 @@
                         <span class="text-xs font-bold text-slate-400">#{{ $order->id }}</span>
                     </div>
 
-                    <h3 class="font-bold text-slate-900 line-clamp-1 mb-1">{{ $order->users->email ?? 'Guest Customer' }}</h3>
+                    <h3 class="font-bold text-slate-900 line-clamp-1 mb-1">{{ $order->users?->email ?? 'Guest Customer' }}</h3>
                     <p class="text-xs text-slate-400 mb-4">{{ \Carbon\Carbon::parse($order->created_at)->format('d M Y, H:i') }}</p>
 
                     <div class="flex flex-wrap gap-2 mt-auto">

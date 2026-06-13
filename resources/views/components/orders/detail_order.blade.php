@@ -141,11 +141,11 @@
                 <div class="mb-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div>
                         <p class="text-sm text-slate-500 font-medium mb-1">Email Pelanggan</p>
-                        <p class="text-slate-800 font-semibold">{{ $order->users->email }}</p>
+                        <p class="text-slate-800 font-semibold">{{ $order->users?->email ?? 'Guest' }}</p>
                     </div>
                     <div>
                         <p class="text-sm text-slate-500 font-medium mb-1">No. HP Akun</p>
-                        <p class="text-slate-800 font-semibold">{{ $order->users->phone_number ?? '-' }}</p>
+                        <p class="text-slate-800 font-semibold">{{ $order->users?->phone_number ?? '-' }}</p>
                     </div>
                 </div>
                 

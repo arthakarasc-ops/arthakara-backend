@@ -93,7 +93,7 @@ class OrderController extends Controller
                 'order_id'        => $order->id,
                 'payment_status'  => $order->payment_status,
                 'tracking_number' => $order->tracking_number,
-                'user'            => $order->users->email,
+                'user'            => $order->users?->email ?? 'Guest',
                 'shipping' => [
                     'first_name'       => $order->shippingAddresses->first_name,
                     'last_name'        => $order->shippingAddresses->last_name,
@@ -134,10 +134,12 @@ class OrderController extends Controller
 
     public function createNewOrder(OrderCreateRequest $request): JsonResponse
     {
-        $user         = Auth::user();
+        $authenticatedUser = auth('sanctum')->user();
         $decayMinutes = 1;
         $maxAttemps   = 3;
-        $key          = 'create-order: ' . $user->email;
+        $key          = $authenticatedUser 
+            ? ('create-order: ' . $authenticatedUser->email) 
+            : ('create-order-guest: ' . $request->ip());
 
         if (RateLimiter::tooManyAttempts($key, $maxAttemps)) {
             $second = RateLimiter::availableIn($key);
@@ -152,6 +154,21 @@ class OrderController extends Controller
 
         try {
             DB::beginTransaction();
+
+            $user = $authenticatedUser;
+            if (!$user) {
+                // Find or create the default guest user
+                $user = \App\Models\User::firstOrCreate(
+                    ['email' => 'guest@arthakara.id'],
+                    [
+                        'full_name' => 'Guest User',
+                        'nickname' => 'Guest',
+                        'phone_number' => $request->input('shipping_address.phone_number', '-'),
+                        'password' => bcrypt(\Illuminate\Support\Str::random(16)),
+                        'is_admin' => false,
+                    ]
+                );
+            }
 
             // ✅ Validasi scent hanya jika diberikan
             foreach ($data['items'] as $index => $item) {

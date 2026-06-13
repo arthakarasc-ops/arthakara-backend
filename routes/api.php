@@ -83,6 +83,13 @@ Route::controller(ShippingMethodController::class)->group(function () {
     Route::get('/shipping-methods/{methodId}', 'getShippingMethod')->whereNumber('methodId');
 });
 
+/*
+|--------------------------------------------------------------------------
+| PUBLIC ORDER (Guest checkout support)
+|--------------------------------------------------------------------------
+*/
+Route::post('/orders/create', [OrderController::class, 'createNewOrder']);
+
 
 
 /*
@@ -139,7 +146,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::controller(OrderController::class)->group(function () {
         Route::get('/users/orders', 'getUserOrders');
         Route::get('/orders/{orderId}', 'getOrderDetail')->whereNumber('orderId');
-        Route::post('/orders/create', 'createNewOrder');
     });
 
     /*
