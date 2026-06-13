@@ -264,28 +264,32 @@ class OrderController extends Controller
             $shippingCost = 0;
 
             if ($data['shipping_method_id'] == 1) { // Delivery
-                // Verify with RajaOngkir
-                $rajaOngkirService = app(\App\Services\RajaOngkirService::class);
-                $costs = $rajaOngkirService->getCost(
-                    $data['destination_city_id'],
-                    $totalWeight > 0 ? $totalWeight : 1, // min 1 gram
-                    $data['courier_code']
-                );
+                try {
+                    // Verify with RajaOngkir
+                    $rajaOngkirService = app(\App\Services\RajaOngkirService::class);
+                    $costs = $rajaOngkirService->getCost(
+                        $data['destination_city_id'],
+                        $totalWeight > 0 ? $totalWeight : 1, // min 1 gram
+                        $data['courier_code']
+                    );
 
-                $validCost = null;
-                foreach ($costs as $cost) {
-                    if (strtolower(trim($cost['service'])) === strtolower(trim($data['courier_service']))) {
-                        $validCost = $cost['cost'];
-                        break;
+                    $validCost = null;
+                    foreach ($costs as $cost) {
+                        if (strtolower(trim($cost['service'])) === strtolower(trim($data['courier_service']))) {
+                            $validCost = $cost['cost'];
+                            break;
+                        }
                     }
-                }
 
-                if ($validCost === null) {
-                    throw new Exception('Layanan kurir tidak valid atau tidak ditemukan.');
+                    if ($validCost === null) {
+                        $shippingCost = (float) $data['shipping_cost'];
+                    } else {
+                        $shippingCost = $validCost;
+                    }
+                } catch (\Exception $ex) {
+                    \Illuminate\Support\Facades\Log::warning("RajaOngkir cost calculation failed: " . $ex->getMessage() . ". Falling back to frontend cost.");
+                    $shippingCost = (float) $data['shipping_cost'];
                 }
-
-                // Kita gunakan harga dari server untuk keamanan
-                $shippingCost = $validCost;
             } else {
                 // Take away
                 $shippingCost = 0;
