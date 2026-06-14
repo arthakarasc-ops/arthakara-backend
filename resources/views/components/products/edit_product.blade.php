@@ -81,25 +81,65 @@
         </div>
 
         <div class="space-y-6">
-            <!-- Media Card -->
-            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4 text-center">
-                <h2 class="text-lg font-bold text-slate-800 text-left">Product Image</h2>
-                
-                <div id="main-image-preview-container" class="relative aspect-square rounded-2xl overflow-hidden border border-slate-100 mb-4 group {{ $product->productUsageImages->count() > 0 ? '' : 'hidden' }}">
-                    <img id="main-image-preview" src="{{ $product->productUsageImages->first()->image_url ?? '#' }}" alt="Preview" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <p class="text-white text-xs font-bold">New Preview</p>
-                    </div>
+            {{-- Media Card: 2 Gambar --}}
+            @php
+                $productImages = $product->productUsageImages()->orderBy('id', 'asc')->get();
+                $editImg1 = $productImages->get(0);
+                $editImg2 = $productImages->get(1);
+            @endphp
+            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-slate-800 text-left">Product Images</h2>
+                    <span class="text-xs text-slate-400">Max 2 foto produk</span>
                 </div>
 
-                <div class="border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center hover:border-cyan-400 transition-colors group cursor-pointer relative">
-                    <input id="image_upload" type="file" name="image" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="previewMainImage(this)">
-                    <div class="py-2">
-                        <svg class="w-8 h-8 text-slate-400 mx-auto mb-1 group-hover:text-cyan-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        <p class="text-xs font-semibold text-slate-600">Replace Main Image</p>
+                <div class="grid grid-cols-2 gap-4">
+                    {{-- Slot Gambar 1 --}}
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            Foto 1 <span class="text-rose-500">*</span>
+                        </label>
+                        <div id="edit-preview-container-1" class="relative aspect-square rounded-2xl overflow-hidden border border-slate-100 group {{ $editImg1 ? '' : 'hidden' }}">
+                            <img id="edit-preview-img-1" src="{{ $editImg1?->image_url ?? '#' }}" alt="Foto 1" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <p class="text-white text-[10px] font-bold">Ganti Foto 1</p>
+                            </div>
+                        </div>
+                        <div class="border-2 border-dashed border-slate-200 rounded-2xl p-3 text-center hover:border-cyan-400 transition-colors group cursor-pointer relative">
+                            <input id="edit_image_upload_1" type="file" name="image" accept="image/*"
+                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                onchange="handleEditSlot(this, 1)">
+                            <div class="py-1">
+                                <svg class="w-6 h-6 text-slate-400 mx-auto mb-1 group-hover:text-cyan-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                <p class="text-[10px] font-semibold text-slate-500">{{ $editImg1 ? 'Ganti Foto 1' : 'Upload Foto 1' }}</p>
+                            </div>
+                        </div>
+                        @error('image') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    {{-- Slot Gambar 2 --}}
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            Foto 2 <span class="text-slate-400 font-normal">(opsional)</span>
+                        </label>
+                        <div id="edit-preview-container-2" class="relative aspect-square rounded-2xl overflow-hidden border border-slate-100 group {{ $editImg2 ? '' : 'hidden' }}">
+                            <img id="edit-preview-img-2" src="{{ $editImg2?->image_url ?? '#' }}" alt="Foto 2" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <p class="text-white text-[10px] font-bold">Ganti Foto 2</p>
+                            </div>
+                        </div>
+                        <div class="border-2 border-dashed border-slate-200 rounded-2xl p-3 text-center hover:border-cyan-400 transition-colors group cursor-pointer relative">
+                            <input id="edit_image_upload_2" type="file" name="image_2" accept="image/*"
+                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                onchange="handleEditSlot(this, 2)">
+                            <div class="py-1">
+                                <svg class="w-6 h-6 text-slate-400 mx-auto mb-1 group-hover:text-cyan-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                <p class="text-[10px] font-semibold text-slate-500">{{ $editImg2 ? 'Ganti Foto 2' : 'Upload Foto 2' }}</p>
+                            </div>
+                        </div>
+                        @error('image_2') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                 </div>
-                @error('image') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
 
             <!-- Categories Card -->
@@ -199,16 +239,16 @@
 </div>
 
 <script>
-    function previewMainImage(input) {
-        const preview = document.getElementById('main-image-preview');
-        const container = document.getElementById('main-image-preview-container');
+    function handleEditSlot(input, slot) {
+        const previewContainer = document.getElementById('edit-preview-container-' + slot);
+        const previewImg       = document.getElementById('edit-preview-img-' + slot);
 
         if (input.files && input.files[0]) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                preview.src = e.target.result;
-                container.classList.remove('hidden');
-            }
+                previewImg.src = e.target.result;
+                previewContainer.classList.remove('hidden');
+            };
             reader.readAsDataURL(input.files[0]);
         }
     }

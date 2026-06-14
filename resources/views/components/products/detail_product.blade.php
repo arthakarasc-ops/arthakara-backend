@@ -35,14 +35,73 @@
     @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <!-- Left: Image Gallery -->
+        <!-- Left: Image Gallery — Slider -->
         <div class="lg:col-span-5 space-y-4">
+            @php
+                $detailImages = $product->productUsageImages()->orderBy('id', 'asc')->get();
+                $detailImageCount = $detailImages->count();
+            @endphp
             <div class="bg-white p-2 rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-                <div class="aspect-square rounded-2xl overflow-hidden bg-slate-50">
-                    <img src="{{ $product->productUsageImages->first()->image_url ?? 'https://via.placeholder.com/600' }}" 
-                         alt="{{ $product->name }}" class="w-full h-full object-cover">
+                <div class="relative aspect-square rounded-2xl overflow-hidden bg-slate-50 group" id="detail-slider">
+
+                    {{-- Slides wrapper --}}
+                    <div id="detail-slides" class="flex h-full transition-transform duration-500 ease-out"
+                         style="width: {{ max($detailImageCount, 1) * 100 }}%">
+                        @forelse($detailImages as $img)
+                            <div style="width: {{ 100 / max($detailImageCount, 1) }}%" class="h-full shrink-0">
+                                <img src="{{ $img->image_url }}" alt="{{ $product->name }}"
+                                     class="w-full h-full object-cover">
+                            </div>
+                        @empty
+                            <div class="w-full h-full shrink-0">
+                                <img src="https://via.placeholder.com/600" alt="{{ $product->name }}"
+                                     class="w-full h-full object-cover">
+                            </div>
+                        @endforelse
+                    </div>
+
+                    @if($detailImageCount > 1)
+                        {{-- Tombol Kiri --}}
+                        <button onclick="detailPrev()" id="detail-btn-prev"
+                            class="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm hover:bg-white text-slate-700 p-2.5 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 z-10">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+
+                        {{-- Tombol Kanan --}}
+                        <button onclick="detailNext()" id="detail-btn-next"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm hover:bg-white text-slate-700 p-2.5 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 z-10">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </button>
+
+                        {{-- Dot Navigasi --}}
+                        <div class="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10 pointer-events-none">
+                            @for($di = 0; $di < $detailImageCount; $di++)
+                                <button class="detail-dot pointer-events-auto rounded-full transition-all duration-300 {{ $di === 0 ? 'w-6 h-2.5 bg-cyan-500' : 'w-2.5 h-2.5 bg-white/60' }}"
+                                        onclick="detailGoTo({{ $di }})"
+                                        id="detail-dot-{{ $di }}">
+                                </button>
+                            @endfor
+                        </div>
+                    @endif
                 </div>
             </div>
+
+            {{-- Thumbnail Strip (hanya jika > 1 gambar) --}}
+            @if($detailImageCount > 1)
+                <div class="grid grid-cols-2 gap-2">
+                    @foreach($detailImages as $thumbIdx => $img)
+                        <button onclick="detailGoTo({{ $thumbIdx }})"
+                                id="detail-thumb-{{ $thumbIdx }}"
+                                class="aspect-square rounded-2xl overflow-hidden border-2 transition-all duration-300 {{ $thumbIdx === 0 ? 'border-cyan-500 opacity-100' : 'border-slate-200 opacity-60 hover:opacity-100' }}">
+                            <img src="{{ $img->image_url }}" alt="Thumbnail {{ $thumbIdx + 1 }}" class="w-full h-full object-cover">
+                        </button>
+                    @endforeach
+                </div>
+            @endif
         </div>
 
         <!-- Right: Info -->
@@ -119,4 +178,78 @@
         </div>
     </div>
 </div>
+
+<script>
+(function () {
+    const totalDetailImages = {{ max($detailImageCount, 1) }};
+    if (totalDetailImages <= 1) return;
+
+    const slidesWrapper = document.getElementById('detail-slides');
+    const dots          = document.querySelectorAll('.detail-dot');
+    let currentDetail   = 0;
+    let autoTimer;
+
+    function detailUpdateUI() {
+        // Slide gambar
+        const percent = (100 / totalDetailImages) * currentDetail;
+        slidesWrapper.style.transform = 'translateX(-' + percent + '%)';
+
+        // Update dots
+        dots.forEach(function(dot, i) {
+            if (i === currentDetail) {
+                dot.classList.remove('w-2.5', 'h-2.5', 'bg-white/60');
+                dot.classList.add('w-6', 'h-2.5', 'bg-cyan-500');
+            } else {
+                dot.classList.remove('w-6', 'bg-cyan-500');
+                dot.classList.add('w-2.5', 'h-2.5', 'bg-white/60');
+            }
+        });
+
+        // Update thumbnail border
+        for (let t = 0; t < totalDetailImages; t++) {
+            const thumb = document.getElementById('detail-thumb-' + t);
+            if (!thumb) continue;
+            if (t === currentDetail) {
+                thumb.classList.remove('border-slate-200', 'opacity-60');
+                thumb.classList.add('border-cyan-500', 'opacity-100');
+            } else {
+                thumb.classList.remove('border-cyan-500', 'opacity-100');
+                thumb.classList.add('border-slate-200', 'opacity-60');
+            }
+        }
+    }
+
+    window.detailGoTo = function(index) {
+        currentDetail = index;
+        detailUpdateUI();
+        resetAutoSlide();
+    };
+
+    window.detailNext = function() {
+        currentDetail = (currentDetail + 1) % totalDetailImages;
+        detailUpdateUI();
+        resetAutoSlide();
+    };
+
+    window.detailPrev = function() {
+        currentDetail = (currentDetail - 1 + totalDetailImages) % totalDetailImages;
+        detailUpdateUI();
+        resetAutoSlide();
+    };
+
+    function startAutoSlide() {
+        autoTimer = setInterval(function () {
+            currentDetail = (currentDetail + 1) % totalDetailImages;
+            detailUpdateUI();
+        }, 4000);
+    }
+
+    function resetAutoSlide() {
+        clearInterval(autoTimer);
+        startAutoSlide();
+    }
+
+    startAutoSlide();
+})();
+</script>
 @endsection

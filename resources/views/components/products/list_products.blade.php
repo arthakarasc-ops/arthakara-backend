@@ -43,10 +43,34 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         @forelse ($products as $product)
             <div class="bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col group border border-slate-100/50">
-                <div class="relative aspect-[4/3] overflow-hidden bg-slate-100">
-                    <img src="{{ $product->productUsageImages->first()->image_url ?? 'https://via.placeholder.com/300' }}" alt="Product Image"
-                         class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
-                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                @php
+                    $cardImages = $product->productUsageImages->take(2);
+                    $cardImageCount = $cardImages->count();
+                @endphp
+                <div class="relative aspect-[4/3] overflow-hidden bg-slate-100" id="card-slider-{{ $product->id }}">
+                    {{-- Wrapper gambar (flex horizontal untuk slide) --}}
+                    <div class="card-slides flex h-full transition-transform duration-500 ease-out"
+                         style="width: {{ $cardImageCount * 100 }}%">
+                        @foreach($cardImages as $img)
+                            <div style="width: {{ 100 / $cardImageCount }}%" class="h-full shrink-0">
+                                <img src="{{ $img->image_url }}"
+                                     alt="Product Image"
+                                     class="w-full h-full object-cover transition-transform duration-700">
+                            </div>
+                        @endforeach
+                    </div>
+
+                    {{-- Overlay gradient --}}
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+
+                    {{-- Dot Navigasi (hanya jika > 1 gambar) --}}
+                    @if($cardImageCount > 1)
+                        <div class="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 pointer-events-none">
+                            @for($di = 0; $di < $cardImageCount; $di++)
+                                <span class="card-dot-{{ $product->id }} block rounded-full transition-all duration-300 {{ $di === 0 ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/50' }}"></span>
+                            @endfor
+                        </div>
+                    @endif
                 </div>
 
                 <div class="p-5 flex flex-col flex-grow">
@@ -93,4 +117,49 @@
         {{ $products->links() }}
     </div>
 </div>
+
+<script>
+(function() {
+    // Data slider per produk: { productId: { current: 0, total: N, interval: timer } }
+    const sliderData = @json(
+        $products->mapWithKeys(function ($p) {
+            return [$p->id => $p->productUsageImages->take(2)->count()];
+        })
+    );
+
+    Object.entries(sliderData).forEach(function([productId, totalImages]) {
+        if (totalImages <= 1) return; // Tidak perlu slider jika hanya 1 gambar
+
+        const container = document.getElementById('card-slider-' + productId);
+        if (!container) return;
+
+        const slidesWrapper = container.querySelector('.card-slides');
+        const dots          = container.querySelectorAll('.card-dot-' + productId);
+        let current = 0;
+
+        function goTo(index) {
+            current = index;
+            // Geser wrapper: setiap slide = 100 / totalImages dari lebar wrapper
+            const percent = (100 / totalImages) * current;
+            slidesWrapper.style.transform = 'translateX(-' + percent + '%)';
+
+            // Update dots
+            dots.forEach(function(dot, i) {
+                if (i === current) {
+                    dot.classList.remove('w-1.5', 'bg-white/50');
+                    dot.classList.add('w-4', 'bg-white');
+                } else {
+                    dot.classList.remove('w-4', 'bg-white');
+                    dot.classList.add('w-1.5', 'bg-white/50');
+                }
+            });
+        }
+
+        // Auto-slide setiap 3 detik
+        setInterval(function() {
+            goTo((current + 1) % totalImages);
+        }, 3000);
+    });
+})();
+</script>
 @endsection

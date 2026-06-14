@@ -28,10 +28,36 @@
     {{-- Product List --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         @forelse ($products as $product)
-            <div class="bg-white rounded-xl shadow hover:shadow-lg transition duration-300 overflow-hidden flex flex-col">
-                <div class="relative h-48 bg-gray-200">
-                    <img src="{{ $product->productUsageImages->first()->image_url ?? 'https://via.placeholder.com/300' }}" alt="Product Image"
-                         class="absolute inset-0 w-full h-full object-cover">
+            @php
+                $colImages = $product->productUsageImages->take(2);
+                $colImageCount = $colImages->count();
+            @endphp
+            <div class="bg-white rounded-xl shadow hover:shadow-lg transition duration-300 overflow-hidden flex flex-col group">
+                <div class="relative h-48 bg-gray-200" id="col-slider-{{ $product->id }}">
+                    {{-- Wrapper gambar --}}
+                    <div class="col-slides flex h-full transition-transform duration-500 ease-out"
+                         style="width: {{ $colImageCount * 100 }}%">
+                        @foreach($colImages as $img)
+                            <div style="width: {{ 100 / $colImageCount }}%" class="h-full shrink-0">
+                                <img src="{{ $img->image_url }}" alt="Product Image"
+                                     class="w-full h-full object-cover">
+                            </div>
+                        @endforeach
+                        @if($colImageCount === 0)
+                            <div class="w-full h-full shrink-0">
+                                <img src="https://via.placeholder.com/300" alt="Product Image" class="w-full h-full object-cover">
+                            </div>
+                        @endif
+                    </div>
+
+                    {{-- Dot Navigasi --}}
+                    @if($colImageCount > 1)
+                        <div class="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 pointer-events-none">
+                            @for($di = 0; $di < $colImageCount; $di++)
+                                <span class="col-dot-{{ $product->id }} block rounded-full transition-all duration-300 {{ $di === 0 ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/50' }}"></span>
+                            @endfor
+                        </div>
+                    @endif
                 </div>
 
                 <div class="p-4 flex flex-col gap-2 flex-grow">
@@ -81,4 +107,46 @@
     <div class="mt-10">
         {{ $products->links() }}
     </div>
+</div>
+
+<script>
+(function() {
+    const sliderData = @json(
+        $products->mapWithKeys(function ($p) {
+            return [$p->id => $p->productUsageImages->take(2)->count()];
+        })
+    );
+
+    Object.entries(sliderData).forEach(function([productId, totalImages]) {
+        if (totalImages <= 1) return;
+
+        const container = document.getElementById('col-slider-' + productId);
+        if (!container) return;
+
+        const slidesWrapper = container.querySelector('.col-slides');
+        const dots          = container.querySelectorAll('.col-dot-' + productId);
+        let current = 0;
+
+        function goTo(index) {
+            current = index;
+            const percent = (100 / totalImages) * current;
+            slidesWrapper.style.transform = 'translateX(-' + percent + '%)';
+
+            dots.forEach(function(dot, i) {
+                if (i === current) {
+                    dot.classList.remove('w-1.5', 'bg-white/50');
+                    dot.classList.add('w-4', 'bg-white');
+                } else {
+                    dot.classList.remove('w-4', 'bg-white');
+                    dot.classList.add('w-1.5', 'bg-white/50');
+                }
+            });
+        }
+
+        setInterval(function() {
+            goTo((current + 1) % totalImages);
+        }, 3000);
+    });
+})();
+</script>
 @endsection

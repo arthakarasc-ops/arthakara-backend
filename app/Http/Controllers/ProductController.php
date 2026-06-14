@@ -159,10 +159,14 @@ class ProductController extends Controller
                         ];
                     })->values(),
 
-                // ✅ IMAGE
+                // ✅ IMAGES (backward compat + array)
                 'usage_image' => optional(
                     $product->productUsageImages->first()
-                )->image_url ?? null
+                )->image_url ?? null,
+
+                'usage_images' => $product->productUsageImages
+                    ->map(fn($img) => $img->image_url)
+                    ->values(),
 
             ], 200);
 

@@ -54,8 +54,20 @@ class ProductWebController extends Controller
 
             $product->productUsageImages()->create([
                 'product_id' => $product->id,
-                'image_url' => $uploadedFileUrl,
+                'image_url'  => $uploadedFileUrl,
             ]);
+
+            // Upload gambar kedua jika disertakan
+            if ($request->hasFile('image_2')) {
+                $upload2 = Cloudinary::upload($request->file('image_2')->getRealPath());
+                $uploadedFileUrl2 = $upload2->getSecurePath();
+                if ($uploadedFileUrl2) {
+                    $product->productUsageImages()->create([
+                        'product_id' => $product->id,
+                        'image_url'  => $uploadedFileUrl2,
+                    ]);
+                }
+            }
 
             // 🔥 Attach types
             if ($request->has('type_ids') && !empty($request->type_ids)) {
@@ -183,10 +195,11 @@ class ProductWebController extends Controller
                 'color_ids.*' => 'exists:colors,id',
                 'scent_ids' => 'nullable|array',
                 'scent_ids.*' => 'exists:scents,id',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5000',
-                'variant_images' => 'nullable|array',
+                'image'            => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5000',
+                'image_2'          => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5000',
+                'variant_images'   => 'nullable|array',
                 'variant_images.*' => 'image|mimes:jpeg,png,jpg,gif|max:5000',
-                'variant_stocks' => 'nullable|array',
+                'variant_stocks'   => 'nullable|array',
                 'variant_stocks.*' => 'nullable|integer|min:0'
             ]);
 
@@ -201,6 +214,9 @@ class ProductWebController extends Controller
             ]);
 
             // Handle image upload if provided
+            // Ambil semua gambar produk berurutan berdasarkan id
+            $existingImages = $product->productUsageImages()->orderBy('id', 'asc')->get();
+
             if ($request->hasFile('image')) {
                 $uploadResponse = Cloudinary::upload($request->file('image')->getRealPath());
                 $uploadedFileUrl = $uploadResponse->getSecurePath();
@@ -210,12 +226,30 @@ class ProductWebController extends Controller
                     return redirect()->back()->with('error', 'Failed to upload image. Please check Cloudinary credentials.')->withInput();
                 }
 
-                // Update the main product usage image
-                $productImage = $product->productUsageImages()->first();
-                if ($productImage) {
-                    $productImage->update(['image_url' => $uploadedFileUrl]);
+                // Update gambar pertama (index 0)
+                if ($existingImages->count() >= 1) {
+                    $existingImages[0]->update(['image_url' => $uploadedFileUrl]);
                 } else {
                     $product->productUsageImages()->create(['image_url' => $uploadedFileUrl]);
+                }
+
+                // Refresh koleksi gambar setelah update
+                $existingImages = $product->productUsageImages()->orderBy('id', 'asc')->get();
+            }
+
+            // Handle gambar kedua
+            if ($request->hasFile('image_2')) {
+                $uploadResponse2 = Cloudinary::upload($request->file('image_2')->getRealPath());
+                $uploadedFileUrl2 = $uploadResponse2->getSecurePath();
+
+                if ($uploadedFileUrl2) {
+                    if ($existingImages->count() >= 2) {
+                        // Update record gambar kedua yang sudah ada
+                        $existingImages[1]->update(['image_url' => $uploadedFileUrl2]);
+                    } else {
+                        // Buat record baru jika baru ada 1 gambar
+                        $product->productUsageImages()->create(['image_url' => $uploadedFileUrl2]);
+                    }
                 }
             }
 

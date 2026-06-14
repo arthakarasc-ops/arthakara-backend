@@ -103,27 +103,65 @@
                 </div>
             </div>
 
-            <!-- Media Card -->
+            {{-- Media Card --}}
             <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
-                <h2 class="text-lg font-bold text-slate-800">Product Media</h2>
-                <div id="image-preview-container" class="hidden mb-4 relative aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
-                    <img id="image-preview" src="#" alt="Preview" class="w-full h-full object-cover">
-                    <button type="button" onclick="resetImage()" class="absolute top-2 right-2 bg-rose-500 text-white p-1.5 rounded-full shadow-lg hover:bg-rose-600 transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-slate-800">Product Media</h2>
+                    <span class="text-xs text-slate-400">Upload hingga 2 foto produk</span>
                 </div>
-                <div id="upload-placeholder" class="border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center hover:border-cyan-400 transition-colors group cursor-pointer relative">
-                    <input id="image_upload" type="file" name="image" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" required onchange="previewImage(this)">
-                    <div class="py-4">
-                        <svg class="w-10 h-10 text-slate-400 mx-auto mb-2 group-hover:text-cyan-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        <p class="text-sm font-semibold text-slate-600">Click to upload image</p>
-                        <p class="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
+
+                <div class="grid grid-cols-2 gap-4">
+                    {{-- Slot Gambar 1 (Wajib) --}}
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            Foto 1 <span class="text-rose-500">*</span>
+                        </label>
+                        <div id="preview-container-1" class="hidden relative aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 group">
+                            <img id="preview-img-1" src="#" alt="Preview" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <button type="button" onclick="resetSlot(1)"
+                                    class="bg-rose-500 text-white p-1.5 rounded-full shadow-lg hover:bg-rose-600 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="placeholder-1" class="relative border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center hover:border-cyan-400 transition-colors cursor-pointer aspect-square flex flex-col items-center justify-center group">
+                            <input id="image_upload_1" type="file" name="image" accept="image/*" required
+                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                onchange="handleSlotUpload(this, 1)">
+                            <svg class="w-8 h-8 text-slate-300 mb-1 group-hover:text-cyan-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <p class="text-[10px] font-semibold text-slate-400">Upload Foto 1</p>
+                        </div>
+                        @error('image') <p class="text-red-500 text-xs mt-1 text-center">{{ $message }}</p> @enderror
+                    </div>
+
+                    {{-- Slot Gambar 2 (Opsional) --}}
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            Foto 2 <span class="text-slate-400 font-normal">(opsional)</span>
+                        </label>
+                        <div id="preview-container-2" class="hidden relative aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 group">
+                            <img id="preview-img-2" src="#" alt="Preview" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <button type="button" onclick="resetSlot(2)"
+                                    class="bg-rose-500 text-white p-1.5 rounded-full shadow-lg hover:bg-rose-600 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="placeholder-2" class="relative border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center hover:border-cyan-400 transition-colors cursor-pointer aspect-square flex flex-col items-center justify-center group">
+                            <input id="image_upload_2" type="file" name="image_2" accept="image/*"
+                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                onchange="handleSlotUpload(this, 2)">
+                            <svg class="w-8 h-8 text-slate-300 mb-1 group-hover:text-cyan-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <p class="text-[10px] font-semibold text-slate-400">Upload Foto 2</p>
+                        </div>
+                        @error('image_2') <p class="text-red-500 text-xs mt-1 text-center">{{ $message }}</p> @enderror
                     </div>
                 </div>
-                @error('image') <p class="text-red-500 text-xs mt-1 text-center">{{ $message }}</p> @enderror
             </div>
 
-            <!-- Attributes Card -->
+            {{-- Attributes Card --}}
             <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
                 <h2 class="text-lg font-bold text-slate-800">Attributes <span class="text-rose-500 text-xs font-normal">*Required</span></h2>
                 
@@ -155,28 +193,30 @@
 </div>
 
 <script>
-    function previewImage(input) {
-        const previewContainer = document.getElementById('image-preview-container');
-        const preview = document.getElementById('image-preview');
-        const placeholder = document.getElementById('upload-placeholder');
+    function handleSlotUpload(input, slot) {
+        const previewContainer = document.getElementById('preview-container-' + slot);
+        const previewImg       = document.getElementById('preview-img-' + slot);
+        const placeholder      = document.getElementById('placeholder-' + slot);
 
         if (input.files && input.files[0]) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                preview.src = e.target.result;
+                previewImg.src = e.target.result;
                 previewContainer.classList.remove('hidden');
                 placeholder.classList.add('hidden');
-            }
+            };
             reader.readAsDataURL(input.files[0]);
         }
     }
 
-    function resetImage() {
-        const input = document.getElementById('image_upload');
-        const previewContainer = document.getElementById('image-preview-container');
-        const placeholder = document.getElementById('upload-placeholder');
-        
-        input.value = "";
+    function resetSlot(slot) {
+        const previewContainer = document.getElementById('preview-container-' + slot);
+        const previewImg       = document.getElementById('preview-img-' + slot);
+        const placeholder      = document.getElementById('placeholder-' + slot);
+        const input            = document.getElementById('image_upload_' + slot);
+
+        previewImg.src = '#';
+        input.value = '';
         previewContainer.classList.add('hidden');
         placeholder.classList.remove('hidden');
     }

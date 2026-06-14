@@ -29,6 +29,9 @@ class ProductResource extends JsonResource
                 ? $this->productUsageImages->first()->image_url
                 : null,
 
+            // Array semua URL gambar produk (untuk slider, dll)
+            'usage_images' => $this->productUsageImages->map(fn($img) => $img->image_url)->values(),
+
             // Warna sudah ada di dalam 'variants' (masing-masing variant punya color)
 
             // ✅ VARIANTS (warna)
