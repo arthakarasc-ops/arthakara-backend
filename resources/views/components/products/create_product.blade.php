@@ -133,6 +133,7 @@
                             <p class="text-[10px] font-semibold text-slate-400">Upload Foto 1</p>
                         </div>
                         @error('image') <p class="text-red-500 text-xs mt-1 text-center">{{ $message }}</p> @enderror
+                        <p id="compress-status-1" class="text-xs text-center text-emerald-600 font-semibold mt-1"></p>
                     </div>
 
                     {{-- Slot Gambar 2 (Opsional) --}}
@@ -157,6 +158,7 @@
                             <p class="text-[10px] font-semibold text-slate-400">Upload Foto 2</p>
                         </div>
                         @error('image_2') <p class="text-red-500 text-xs mt-1 text-center">{{ $message }}</p> @enderror
+                        <p id="compress-status-2" class="text-xs text-center text-emerald-600 font-semibold mt-1"></p>
                     </div>
                 </div>
             </div>
@@ -193,20 +195,80 @@
 </div>
 
 <script>
+    // ============================================================
+    // CLIENT-SIDE IMAGE COMPRESSION
+    // Kompres gambar di browser sebelum upload — fix 413 error
+    // Max dimensi: 1200x1200px, Kualitas JPEG: 80%
+    // ============================================================
+
+    // Simpan blob gambar yang sudah dikompres
+    const compressedBlobs = { 1: null, 2: null };
+
+    function compressImage(file, maxSize, quality, callback) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let w = img.width;
+                let h = img.height;
+
+                // Resize agar tidak melebihi maxSize
+                if (w > maxSize || h > maxSize) {
+                    if (w > h) {
+                        h = Math.round(h * maxSize / w);
+                        w = maxSize;
+                    } else {
+                        w = Math.round(w * maxSize / h);
+                        h = maxSize;
+                    }
+                }
+
+                canvas.width  = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+
+                // Konversi ke Blob JPEG
+                canvas.toBlob(function(blob) {
+                    callback(blob, canvas.toDataURL('image/jpeg', quality));
+                }, 'image/jpeg', quality);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
     function handleSlotUpload(input, slot) {
         const previewContainer = document.getElementById('preview-container-' + slot);
         const previewImg       = document.getElementById('preview-img-' + slot);
         const placeholder      = document.getElementById('placeholder-' + slot);
+        const statusEl         = document.getElementById('compress-status-' + slot);
 
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                previewImg.src = e.target.result;
-                previewContainer.classList.remove('hidden');
-                placeholder.classList.add('hidden');
-            };
-            reader.readAsDataURL(input.files[0]);
-        }
+        if (!input.files || !input.files[0]) return;
+
+        const file = input.files[0];
+
+        // Tampilkan loading
+        if (statusEl) statusEl.textContent = 'Mengompres...';
+        placeholder.classList.add('hidden');
+
+        compressImage(file, 1200, 0.80, function(blob, dataUrl) {
+            // Simpan blob untuk form submission
+            compressedBlobs[slot] = blob;
+
+            // Tampilkan preview
+            previewImg.src = dataUrl;
+            previewContainer.classList.remove('hidden');
+
+            // Update status
+            const originalKB = Math.round(file.size / 1024);
+            const compressedKB = Math.round(blob.size / 1024);
+            if (statusEl) statusEl.textContent = `${originalKB}KB → ${compressedKB}KB`;
+
+            // Clear input file asli agar tidak dikirim dua kali
+            input.value = '';
+        });
     }
 
     function resetSlot(slot) {
@@ -214,12 +276,80 @@
         const previewImg       = document.getElementById('preview-img-' + slot);
         const placeholder      = document.getElementById('placeholder-' + slot);
         const input            = document.getElementById('image_upload_' + slot);
+        const statusEl         = document.getElementById('compress-status-' + slot);
 
         previewImg.src = '#';
         input.value = '';
+        compressedBlobs[slot] = null;
+        if (statusEl) statusEl.textContent = '';
         previewContainer.classList.add('hidden');
         placeholder.classList.remove('hidden');
     }
+
+    // ============================================================
+    // INTERCEPT FORM SUBMIT — kirim gambar kompres via FormData
+    // ============================================================
+    document.getElementById('product-form').addEventListener('submit', function(e) {
+        // Jika tidak ada gambar yang dikompres, biarkan submit normal
+        const hasCompressed = compressedBlobs[1] || compressedBlobs[2];
+        if (!hasCompressed) return; // submit normal jika tidak ada blob
+
+        e.preventDefault();
+
+        const form   = e.target;
+        const action = form.action;
+        const formData = new FormData(form);
+
+        // Ganti field image dengan blob yang sudah dikompres
+        if (compressedBlobs[1]) {
+            formData.set('image', compressedBlobs[1], 'image_1.jpg');
+        }
+        if (compressedBlobs[2]) {
+            formData.set('image_2', compressedBlobs[2], 'image_2.jpg');
+        }
+
+        // Tombol submit — tampilkan loading
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Menyimpan...';
+        }
+
+        // Kirim via fetch sebagai form POST
+        fetch(action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else if (response.ok) {
+                return response.text().then(html => {
+                    // Jika ada redirect dalam response body, ikuti
+                    document.open();
+                    document.write(html);
+                    document.close();
+                });
+            } else {
+                return response.text().then(html => {
+                    document.open();
+                    document.write(html);
+                    document.close();
+                });
+            }
+        })
+        .catch(err => {
+            console.error('Upload error:', err);
+            alert('Terjadi kesalahan saat upload. Silakan coba lagi.');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Publish Product';
+            }
+        });
+    });
 </script>
 </div>
 @endsection

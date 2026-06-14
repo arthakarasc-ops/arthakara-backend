@@ -115,6 +115,7 @@
                             </div>
                         </div>
                         @error('image') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <p id="edit-compress-status-1" class="text-xs text-emerald-600 font-semibold mt-1"></p>
                     </div>
 
                     {{-- Slot Gambar 2 --}}
@@ -138,6 +139,7 @@
                             </div>
                         </div>
                         @error('image_2') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <p id="edit-compress-status-2" class="text-xs text-emerald-600 font-semibold mt-1"></p>
                     </div>
                 </div>
             </div>
@@ -239,30 +241,109 @@
 </div>
 
 <script>
+    // ============================================================
+    // CLIENT-SIDE IMAGE COMPRESSION — fix 413 Content Too Large
+    // ============================================================
+    const editCompressedBlobs = { 1: null, 2: null };
+
+    function compressImageEdit(file, maxSize, quality, callback) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let w = img.width;
+                let h = img.height;
+
+                if (w > maxSize || h > maxSize) {
+                    if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+                    else       { w = Math.round(w * maxSize / h); h = maxSize; }
+                }
+
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                canvas.toBlob(function(blob) {
+                    callback(blob, canvas.toDataURL('image/jpeg', quality));
+                }, 'image/jpeg', quality);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
     function handleEditSlot(input, slot) {
         const previewContainer = document.getElementById('edit-preview-container-' + slot);
         const previewImg       = document.getElementById('edit-preview-img-' + slot);
+        const statusEl         = document.getElementById('edit-compress-status-' + slot);
 
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                previewImg.src = e.target.result;
-                previewContainer.classList.remove('hidden');
-            };
-            reader.readAsDataURL(input.files[0]);
-        }
+        if (!input.files || !input.files[0]) return;
+        const file = input.files[0];
+
+        if (statusEl) statusEl.textContent = 'Mengompres...';
+
+        compressImageEdit(file, 1200, 0.80, function(blob, dataUrl) {
+            editCompressedBlobs[slot] = blob;
+            previewImg.src = dataUrl;
+            previewContainer.classList.remove('hidden');
+
+            const originalKB  = Math.round(file.size / 1024);
+            const compressedKB = Math.round(blob.size / 1024);
+            if (statusEl) statusEl.textContent = `${originalKB}KB → ${compressedKB}KB ✓`;
+
+            input.value = '';
+        });
     }
 
     function previewVariantImage(input, colorId) {
         const preview = document.getElementById('variant-preview-' + colorId);
-
         if (input.files && input.files[0]) {
             const reader = new FileReader();
-            reader.onload = function(e) {
-                preview.src = e.target.result;
-            }
+            reader.onload = function(e) { preview.src = e.target.result; }
             reader.readAsDataURL(input.files[0]);
         }
     }
+
+    // ============================================================
+    // INTERCEPT FORM SUBMIT — inject compressed blobs
+    // ============================================================
+    document.getElementById('product-form').addEventListener('submit', function(e) {
+        const hasCompressed = editCompressedBlobs[1] || editCompressedBlobs[2];
+        if (!hasCompressed) return; // submit normal jika tidak ada kompresi
+
+        e.preventDefault();
+
+        const form     = e.target;
+        const formData = new FormData(form);
+
+        // Override method PUT agar diterima Laravel
+        formData.set('_method', 'PUT');
+
+        if (editCompressedBlobs[1]) formData.set('image',   editCompressedBlobs[1], 'image_1.jpg');
+        if (editCompressedBlobs[2]) formData.set('image_2', editCompressedBlobs[2], 'image_2.jpg');
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Menyimpan...'; }
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                return response.text().then(html => {
+                    document.open(); document.write(html); document.close();
+                });
+            }
+        })
+        .catch(err => {
+            console.error('Upload error:', err);
+            alert('Terjadi kesalahan saat upload. Silakan coba lagi.');
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Update Product'; }
+        });
+    });
 </script>
 @endsection
+

@@ -19,3 +19,20 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# ======================================================
+# FIX 413 Content Too Large — Upload Size Configuration
+# ======================================================
+<IfModule mod_php.c>
+    php_value upload_max_filesize 20M
+    php_value post_max_size 40M
+    php_value memory_limit 256M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+</IfModule>
+
+# For PHP-FPM (CGI) based hosting
+<IfModule mod_fcgid.c>
+    FcgidMaxRequestLen 41943040
+</IfModule>
+
