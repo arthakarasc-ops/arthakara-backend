@@ -107,10 +107,10 @@
             <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
                 <div class="flex items-center justify-between">
                     <h2 class="text-lg font-bold text-slate-800">Product Media</h2>
-                    <span class="text-xs text-slate-400">Upload hingga 2 foto produk</span>
+                    <span class="text-xs text-slate-400">Upload hingga 3 foto produk</span>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-3 gap-3">
                     {{-- Slot Gambar 1 (Wajib) --}}
                     <div class="space-y-2">
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -160,6 +160,31 @@
                         @error('image_2') <p class="text-red-500 text-xs mt-1 text-center">{{ $message }}</p> @enderror
                         <p id="compress-status-2" class="text-xs text-center text-emerald-600 font-semibold mt-1"></p>
                     </div>
+
+                    {{-- Slot Gambar 3 (Opsional) --}}
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            Foto 3 <span class="text-slate-400 font-normal">(opsional)</span>
+                        </label>
+                        <div id="preview-container-3" class="hidden relative aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 group">
+                            <img id="preview-img-3" src="#" alt="Preview" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <button type="button" onclick="resetSlot(3)"
+                                    class="bg-rose-500 text-white p-1.5 rounded-full shadow-lg hover:bg-rose-600 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="placeholder-3" class="relative border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center hover:border-cyan-400 transition-colors cursor-pointer aspect-square flex flex-col items-center justify-center group">
+                            <input id="image_upload_3" type="file" name="image_3" accept="image/*"
+                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                onchange="handleSlotUpload(this, 3)">
+                            <svg class="w-8 h-8 text-slate-300 mb-1 group-hover:text-cyan-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <p class="text-[10px] font-semibold text-slate-400">Upload Foto 3</p>
+                        </div>
+                        @error('image_3') <p class="text-red-500 text-xs mt-1 text-center">{{ $message }}</p> @enderror
+                        <p id="compress-status-3" class="text-xs text-center text-emerald-600 font-semibold mt-1"></p>
+                    </div>
                 </div>
             </div>
 
@@ -202,7 +227,7 @@
     // ============================================================
 
     // Simpan blob gambar yang sudah dikompres
-    const compressedBlobs = { 1: null, 2: null };
+    const compressedBlobs = { 1: null, 2: null, 3: null };
 
     function compressImage(file, maxSize, quality, callback) {
         const reader = new FileReader();
@@ -291,7 +316,7 @@
     // ============================================================
     document.getElementById('product-form').addEventListener('submit', function(e) {
         // Jika tidak ada gambar yang dikompres, biarkan submit normal
-        const hasCompressed = compressedBlobs[1] || compressedBlobs[2];
+        const hasCompressed = compressedBlobs[1] || compressedBlobs[2] || compressedBlobs[3];
         if (!hasCompressed) return; // submit normal jika tidak ada blob
 
         e.preventDefault();
@@ -306,6 +331,9 @@
         }
         if (compressedBlobs[2]) {
             formData.set('image_2', compressedBlobs[2], 'image_2.jpg');
+        }
+        if (compressedBlobs[3]) {
+            formData.set('image_3', compressedBlobs[3], 'image_3.jpg');
         }
 
         // Tombol submit — tampilkan loading

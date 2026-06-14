@@ -32,6 +32,7 @@ class ProductWebCreateRequest extends FormRequest
             'description' => ['required'],
             'image'   => ['required', 'image', 'mimes:jpeg,png,jpg,gif', 'max:5120'],
             'image_2' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:5120'],
+            'image_3' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:5120'],
             'color_ids' => ['required', 'array', 'min:1'],
             'color_ids.*' => ['exists:colors,id'],
             'scent_ids' => ['nullable', 'array'],

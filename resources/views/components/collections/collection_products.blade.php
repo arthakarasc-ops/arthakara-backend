@@ -29,7 +29,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         @forelse ($products as $product)
             @php
-                $colImages = $product->productUsageImages->take(2);
+                $colImages = $product->productUsageImages->take(3);
                 $colImageCount = $colImages->count();
             @endphp
             <div class="bg-white rounded-xl shadow hover:shadow-lg transition duration-300 overflow-hidden flex flex-col group">
@@ -113,7 +113,7 @@
 (function() {
     const sliderData = @json(
         $products->mapWithKeys(function ($p) {
-            return [$p->id => $p->productUsageImages->take(2)->count()];
+            return [$p->id => $p->productUsageImages->take(3)->count()];
         })
     );
 

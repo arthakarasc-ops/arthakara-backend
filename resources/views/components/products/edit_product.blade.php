@@ -86,14 +86,15 @@
                 $productImages = $product->productUsageImages()->orderBy('id', 'asc')->get();
                 $editImg1 = $productImages->get(0);
                 $editImg2 = $productImages->get(1);
+                $editImg3 = $productImages->get(2);
             @endphp
             <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
                 <div class="flex items-center justify-between">
                     <h2 class="text-lg font-bold text-slate-800 text-left">Product Images</h2>
-                    <span class="text-xs text-slate-400">Max 2 foto produk</span>
+                    <span class="text-xs text-slate-400">Max 3 foto produk</span>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-3 gap-3">
                     {{-- Slot Gambar 1 --}}
                     <div class="space-y-2">
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -140,6 +141,30 @@
                         </div>
                         @error('image_2') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         <p id="edit-compress-status-2" class="text-xs text-emerald-600 font-semibold mt-1"></p>
+                    </div>
+
+                    {{-- Slot Gambar 3 --}}
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            Foto 3 <span class="text-slate-400 font-normal">(opsional)</span>
+                        </label>
+                        <div id="edit-preview-container-3" class="relative aspect-square rounded-2xl overflow-hidden border border-slate-100 group {{ $editImg3 ? '' : 'hidden' }}">
+                            <img id="edit-preview-img-3" src="{{ $editImg3?->image_url ?? '#' }}" alt="Foto 3" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <p class="text-white text-[10px] font-bold">Ganti Foto 3</p>
+                            </div>
+                        </div>
+                        <div class="border-2 border-dashed border-slate-200 rounded-2xl p-3 text-center hover:border-cyan-400 transition-colors group cursor-pointer relative">
+                            <input id="edit_image_upload_3" type="file" name="image_3" accept="image/*"
+                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                onchange="handleEditSlot(this, 3)">
+                            <div class="py-1">
+                                <svg class="w-6 h-6 text-slate-400 mx-auto mb-1 group-hover:text-cyan-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                <p class="text-[10px] font-semibold text-slate-500">{{ $editImg3 ? 'Ganti Foto 3' : 'Upload Foto 3' }}</p>
+                            </div>
+                        </div>
+                        @error('image_3') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <p id="edit-compress-status-3" class="text-xs text-emerald-600 font-semibold mt-1"></p>
                     </div>
                 </div>
             </div>
@@ -244,7 +269,7 @@
     // ============================================================
     // CLIENT-SIDE IMAGE COMPRESSION — fix 413 Content Too Large
     // ============================================================
-    const editCompressedBlobs = { 1: null, 2: null };
+    const editCompressedBlobs = { 1: null, 2: null, 3: null };
 
     function compressImageEdit(file, maxSize, quality, callback) {
         const reader = new FileReader();
@@ -307,7 +332,7 @@
     // INTERCEPT FORM SUBMIT — inject compressed blobs
     // ============================================================
     document.getElementById('product-form').addEventListener('submit', function(e) {
-        const hasCompressed = editCompressedBlobs[1] || editCompressedBlobs[2];
+        const hasCompressed = editCompressedBlobs[1] || editCompressedBlobs[2] || editCompressedBlobs[3];
         if (!hasCompressed) return; // submit normal jika tidak ada kompresi
 
         e.preventDefault();
@@ -320,6 +345,7 @@
 
         if (editCompressedBlobs[1]) formData.set('image',   editCompressedBlobs[1], 'image_1.jpg');
         if (editCompressedBlobs[2]) formData.set('image_2', editCompressedBlobs[2], 'image_2.jpg');
+        if (editCompressedBlobs[3]) formData.set('image_3', editCompressedBlobs[3], 'image_3.jpg');
 
         const submitBtn = form.querySelector('button[type="submit"]');
         if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Menyimpan...'; }

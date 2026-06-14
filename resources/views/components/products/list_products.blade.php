@@ -44,7 +44,7 @@
         @forelse ($products as $product)
             <div class="bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col group border border-slate-100/50">
                 @php
-                    $cardImages = $product->productUsageImages->take(2);
+                    $cardImages = $product->productUsageImages->take(3);
                     $cardImageCount = $cardImages->count();
                 @endphp
                 <div class="relative aspect-[4/3] overflow-hidden bg-slate-100" id="card-slider-{{ $product->id }}">
@@ -123,7 +123,7 @@
     // Data slider per produk: { productId: { current: 0, total: N, interval: timer } }
     const sliderData = @json(
         $products->mapWithKeys(function ($p) {
-            return [$p->id => $p->productUsageImages->take(2)->count()];
+            return [$p->id => $p->productUsageImages->take(3)->count()];
         })
     );
 

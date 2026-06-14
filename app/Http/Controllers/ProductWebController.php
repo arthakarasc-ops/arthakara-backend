@@ -69,6 +69,18 @@ class ProductWebController extends Controller
                 }
             }
 
+            // Upload gambar ketiga jika disertakan
+            if ($request->hasFile('image_3')) {
+                $upload3 = Cloudinary::upload($request->file('image_3')->getRealPath());
+                $uploadedFileUrl3 = $upload3->getSecurePath();
+                if ($uploadedFileUrl3) {
+                    $product->productUsageImages()->create([
+                        'product_id' => $product->id,
+                        'image_url'  => $uploadedFileUrl3,
+                    ]);
+                }
+            }
+
             // 🔥 Attach types
             if ($request->has('type_ids') && !empty($request->type_ids)) {
                 $product->types()->sync($request->type_ids);
@@ -197,6 +209,7 @@ class ProductWebController extends Controller
                 'scent_ids.*' => 'exists:scents,id',
                 'image'            => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5000',
                 'image_2'          => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5000',
+                'image_3'          => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5000',
                 'variant_images'   => 'nullable|array',
                 'variant_images.*' => 'image|mimes:jpeg,png,jpg,gif|max:5000',
                 'variant_stocks'   => 'nullable|array',
@@ -243,12 +256,27 @@ class ProductWebController extends Controller
                 $uploadedFileUrl2 = $uploadResponse2->getSecurePath();
 
                 if ($uploadedFileUrl2) {
+                    // Refresh sebelum cek index
+                    $existingImages = $product->productUsageImages()->orderBy('id', 'asc')->get();
                     if ($existingImages->count() >= 2) {
-                        // Update record gambar kedua yang sudah ada
                         $existingImages[1]->update(['image_url' => $uploadedFileUrl2]);
                     } else {
-                        // Buat record baru jika baru ada 1 gambar
                         $product->productUsageImages()->create(['image_url' => $uploadedFileUrl2]);
+                    }
+                }
+            }
+
+            // Handle gambar ketiga
+            if ($request->hasFile('image_3')) {
+                $uploadResponse3 = Cloudinary::upload($request->file('image_3')->getRealPath());
+                $uploadedFileUrl3 = $uploadResponse3->getSecurePath();
+
+                if ($uploadedFileUrl3) {
+                    $existingImages = $product->productUsageImages()->orderBy('id', 'asc')->get();
+                    if ($existingImages->count() >= 3) {
+                        $existingImages[2]->update(['image_url' => $uploadedFileUrl3]);
+                    } else {
+                        $product->productUsageImages()->create(['image_url' => $uploadedFileUrl3]);
                     }
                 }
             }
