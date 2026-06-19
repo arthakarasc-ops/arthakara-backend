@@ -16,7 +16,7 @@ class UserSeeder extends Seeder
         DB::table('users')->updateOrInsert(
             ['email' => 'arthakarasc@gmail.com'],
             [
-                'password' => bcrypt('arthakara123'),
+                'password' => bcrypt('arthakara12345'),
                 'full_name' => 'Arthakara Admin',
                 'nickname' => 'Admin',
                 'phone_number' => '08123456789',
