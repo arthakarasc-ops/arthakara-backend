@@ -8,15 +8,17 @@ use Illuminate\Support\Str;
 
 class DokuService
 {
+    private const SIGNATURE_PREFIX = 'HMACSHA256=';
+
     protected string $clientId;
     protected string $sharedKey;
     protected string $apiUrl;
 
     public function __construct()
     {
-        $this->clientId = config('doku.client_id') ?? '';
+        $this->clientId  = config('doku.client_id') ?? '';
         $this->sharedKey = config('doku.shared_key') ?? '';
-        $this->apiUrl = config('doku.api_url') ?? 'https://api-sandbox.doku.com';
+        $this->apiUrl    = config('doku.api_url') ?? 'https://api-sandbox.doku.com';
     }
 
     /**
@@ -32,28 +34,18 @@ class DokuService
      * Signed with HMAC-SHA256 using shared key.
      *
      * @param string $targetPath API endpoint path (e.g., /checkout/v1/payment)
-     * @param string $requestId Unique request ID
-     * @param string $timestamp ISO8601 timestamp (UTC)
-     * @param string $jsonBody Raw JSON body string (minified)
+     * @param string $requestId  Unique request ID
+     * @param string $timestamp  ISO8601 timestamp (UTC)
+     * @param string $jsonBody   Raw JSON body string (minified)
      * @return string Signature header value prefixed with "HMACSHA256="
      */
     public function generateSignature(string $targetPath, string $requestId, string $timestamp, string $jsonBody): string
     {
-        // 1. Generate Digest: Base64(SHA-256(minified JSON body))
-        $digest = base64_encode(hash('sha256', $jsonBody, true));
+        $digest           = base64_encode(hash('sha256', $jsonBody, true));
+        $signatureComponent = $this->buildSignatureComponent($this->clientId, $requestId, $timestamp, $targetPath, $digest);
+        $signature        = base64_encode(hash_hmac('sha256', $signatureComponent, $this->sharedKey, true));
 
-        // 2. Construct Signature Component (no trailing newline)
-        $signatureComponent = 
-            "Client-Id:" . $this->clientId . "\n" .
-            "Request-Id:" . $requestId . "\n" .
-            "Request-Timestamp:" . $timestamp . "\n" .
-            "Request-Target:" . $targetPath . "\n" .
-            "Digest:" . $digest;
-
-        // 3. Sign using HMAC-SHA256 with shared key
-        $signature = base64_encode(hash_hmac('sha256', $signatureComponent, $this->sharedKey, true));
-
-        return "HMACSHA256=" . $signature;
+        return self::SIGNATURE_PREFIX . $signature;
     }
 
     /**
@@ -73,42 +65,41 @@ class DokuService
         }
 
         $targetPath = '/checkout/v1/payment';
-        $requestId = (string) Str::uuid();
-        $timestamp = gmdate('Y-m-d\TH:i:s\Z');
+        $requestId  = (string) Str::uuid();
+        $timestamp  = gmdate('Y-m-d\TH:i:s\Z');
 
         // Minified JSON body — signature is calculated against this exact string
-        $jsonBody = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-
+        $jsonBody  = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         $signature = $this->generateSignature($targetPath, $requestId, $timestamp, $jsonBody);
 
         Log::info('Doku Checkout Request:', [
-            'url' => $this->apiUrl . $targetPath,
+            'url'        => $this->apiUrl . $targetPath,
             'request_id' => $requestId,
-            'timestamp' => $timestamp,
+            'timestamp'  => $timestamp,
         ]);
 
         try {
             // Send raw JSON body (withBody) to ensure byte-exact match with signature digest
             $response = Http::withHeaders([
-                'Client-Id' => $this->clientId,
-                'Request-Id' => $requestId,
+                'Client-Id'         => $this->clientId,
+                'Request-Id'        => $requestId,
                 'Request-Timestamp' => $timestamp,
-                'Signature' => $signature,
-                'Content-Type' => 'application/json',
+                'Signature'         => $signature,
+                'Content-Type'      => 'application/json',
             ])->withBody($jsonBody, 'application/json')
               ->post($this->apiUrl . $targetPath);
 
             if ($response->successful()) {
                 Log::info('Doku Checkout Response:', [
                     'status' => $response->status(),
-                    'body' => $response->json()
+                    'body'   => $response->json(),
                 ]);
                 return $response->json();
             }
 
             Log::error('Doku Checkout API failed:', [
-                'status' => $response->status(),
-                'response' => $response->body()
+                'status'   => $response->status(),
+                'response' => $response->body(),
             ]);
             return null;
         } catch (\Exception $e) {
@@ -123,12 +114,12 @@ class DokuService
      * Re-calculates the expected signature from the raw body and headers,
      * then compares it against the received Signature header.
      *
-     * @param string $rawBody Raw content of request body
+     * @param string $rawBody           Raw content of request body
      * @param string $receivedSignature Signature header value
-     * @param string $receivedClientId Client-Id header value
+     * @param string $receivedClientId  Client-Id header value
      * @param string $receivedRequestId Request-Id header value
      * @param string $receivedTimestamp Request-Timestamp header value
-     * @param string $targetPath Path where callback was received (e.g. /api/doku-callback)
+     * @param string $targetPath        Path where callback was received (e.g. /api/doku-callback)
      * @return bool
      */
     public function verifyCallbackSignature(
@@ -142,24 +133,16 @@ class DokuService
         // Validate Client-Id matches our configured one
         if ($receivedClientId !== $this->clientId) {
             Log::warning('Doku Callback: Client-Id mismatch.', [
-                'received' => $receivedClientId,
-                'configured' => $this->clientId
+                'received'   => $receivedClientId,
+                'configured' => $this->clientId,
             ]);
             return false;
         }
 
-        // Calculate expected signature using same algorithm as outbound requests
-        $digest = base64_encode(hash('sha256', $rawBody, true));
-
-        $signatureComponent = 
-            "Client-Id:" . $receivedClientId . "\n" .
-            "Request-Id:" . $receivedRequestId . "\n" .
-            "Request-Timestamp:" . $receivedTimestamp . "\n" .
-            "Request-Target:" . $targetPath . "\n" .
-            "Digest:" . $digest;
-
-        $calculatedSignatureValue = base64_encode(hash_hmac('sha256', $signatureComponent, $this->sharedKey, true));
-        $expectedSignature = "HMACSHA256=" . $calculatedSignatureValue;
+        $digest             = base64_encode(hash('sha256', $rawBody, true));
+        $signatureComponent = $this->buildSignatureComponent($receivedClientId, $receivedRequestId, $receivedTimestamp, $targetPath, $digest);
+        $calculatedValue    = base64_encode(hash_hmac('sha256', $signatureComponent, $this->sharedKey, true));
+        $expectedSignature  = self::SIGNATURE_PREFIX . $calculatedValue;
 
         // Use hash_equals for timing-safe comparison (prevents timing attacks)
         if (!hash_equals($expectedSignature, trim($receivedSignature))) {
@@ -171,5 +154,22 @@ class DokuService
         }
 
         return true;
+    }
+
+    /**
+     * Bangun string komponen signature sesuai format Doku.
+     */
+    private function buildSignatureComponent(
+        string $clientId,
+        string $requestId,
+        string $timestamp,
+        string $targetPath,
+        string $digest
+    ): string {
+        return "Client-Id:{$clientId}\n"
+             . "Request-Id:{$requestId}\n"
+             . "Request-Timestamp:{$timestamp}\n"
+             . "Request-Target:{$targetPath}\n"
+             . "Digest:{$digest}";
     }
 }

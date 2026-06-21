@@ -2,20 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\ProductVariant;
-use App\Services\FonnteService;
 use App\Services\DokuService;
+use App\Services\FonnteService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
-    protected DokuService $dokuService;
+    /**
+     * Nomor WhatsApp admin untuk notifikasi pesanan baru.
+     * Idealnya dipindah ke config('services.fonnte.admin_phone').
+     */
+    private const ADMIN_PHONE = '087784488639';
 
-    public function __construct(DokuService $dokuService)
+    protected DokuService $dokuService;
+    protected FonnteService $fonnteService;
+
+    public function __construct(DokuService $dokuService, FonnteService $fonnteService)
     {
-        $this->dokuService = $dokuService;
+        $this->dokuService   = $dokuService;
+        $this->fonnteService = $fonnteService;
     }
 
     /**
@@ -27,7 +35,6 @@ class PaymentController extends Controller
             'order_id' => 'required|integer|exists:orders,id'
         ]);
 
-        // Ambil order beserta relasi
         $order = Order::with([
             'orderItems.productVariants.product',
             'users',
@@ -50,19 +57,19 @@ class PaymentController extends Controller
             $unitPrice   = (int) round($item->price_at_purchase);
 
             $items[] = [
-                'name'     => mb_substr($productName, 0, 50), // max 50 char Doku
+                'name'     => mb_substr($productName, 0, 50), // Doku max 50 karakter
                 'price'    => $unitPrice,
                 'quantity' => $item->quantity,
             ];
         }
 
-        // ✅ Tambahkan ongkos kirim sebagai item tersendiri
+        // Tambahkan ongkos kirim sebagai item tersendiri jika ada
         $shippingPrice = (int) $order->shipping_cost;
         if ($shippingPrice > 0) {
-            $shippingName = $order->courier_code 
-                ? strtoupper($order->courier_code) . ' - ' . $order->courier_service 
+            $shippingName = $order->courier_code
+                ? strtoupper($order->courier_code) . ' - ' . $order->courier_service
                 : 'Ongkos Kirim - ' . $order->shippingMethods->name;
-                
+
             $items[] = [
                 'name'     => substr($shippingName, 0, 50),
                 'price'    => $shippingPrice,
@@ -73,16 +80,16 @@ class PaymentController extends Controller
         $dokuPayload = [
             'order' => [
                 'invoice_number' => $dokuInvoiceNumber,
-                'amount' => (int) $order->total_price,
-                'currency' => 'IDR',
-                'callback_url' => config('app.frontend_url', 'https://arthakara.id') . '/orders',
-                'line_items' => $items,
+                'amount'         => (int) $order->total_price,
+                'currency'       => 'IDR',
+                'callback_url'   => config('app.frontend_url', 'https://arthakara.id') . '/orders',
+                'line_items'     => $items,
             ],
             'payment' => [
-                'payment_due_date' => 60, // 60 menit
+                'payment_due_date' => 60, // menit
             ],
             'customer' => [
-                'name' => $order->users?->name ?? 'User',
+                'name'  => $order->users?->name ?? 'User',
                 'email' => $order->users?->email ?? 'user@email.com',
             ],
         ];
@@ -92,10 +99,9 @@ class PaymentController extends Controller
         if ($dokuResponse && isset($dokuResponse['response']['payment']['url'])) {
             $paymentUrl = $dokuResponse['response']['payment']['url'];
 
-            // Update order info
             $order->doku_invoice_number = $dokuInvoiceNumber;
-            $order->doku_payment_url = $paymentUrl;
-            $order->payment_status    = 'pending';
+            $order->doku_payment_url    = $paymentUrl;
+            $order->payment_status      = 'pending';
             $order->save();
 
             return response()->json([
@@ -113,23 +119,23 @@ class PaymentController extends Controller
 
     /**
      * POST /api/doku-callback
-     * Dipanggil oleh Doku setelah transaksi selesai
+     * Dipanggil oleh Doku setelah transaksi selesai.
      */
     public function dokuCallback(Request $request)
     {
         $signature = $request->header('Signature') ?? $request->header('X-Signature') ?? '';
-        $clientId = $request->header('Client-Id') ?? '';
+        $clientId  = $request->header('Client-Id') ?? '';
         $requestId = $request->header('Request-Id') ?? '';
         $timestamp = $request->header('Request-Timestamp') ?? '';
 
         Log::info('Doku Callback Received:', [
             'headers' => [
-                'Signature' => $signature,
-                'Client-Id' => $clientId,
-                'Request-Id' => $requestId,
+                'Signature'         => $signature,
+                'Client-Id'         => $clientId,
+                'Request-Id'        => $requestId,
                 'Request-Timestamp' => $timestamp,
             ],
-            'body' => $request->all()
+            'body' => $request->all(),
         ]);
 
         $isValid = $this->dokuService->verifyCallbackSignature(
@@ -145,7 +151,7 @@ class PaymentController extends Controller
             return response()->json(['message' => 'Invalid signature'], 400);
         }
 
-        $invoiceNumber = $request->input('order.invoice_number');
+        $invoiceNumber     = $request->input('order.invoice_number');
         $transactionStatus = $request->input('transaction.status');
 
         $order = Order::with(['orderItems', 'shippingMethods', 'shippingAddresses', 'users'])
@@ -164,7 +170,7 @@ class PaymentController extends Controller
                 $order->payment_status = 'paid';
                 $order->status_id      = 2; // Processing (Sedang Dikemas)
 
-                // ✅ Kurangi stok produk
+                // Kurangi stok produk
                 foreach ($order->orderItems as $item) {
                     $variant = ProductVariant::with('product')->find($item->product_variant_id);
                     if ($variant && $variant->product) {
@@ -173,17 +179,16 @@ class PaymentController extends Controller
                     }
                 }
 
-                // ✅ Notifikasi WA ke Admin jika Delivery (Bukan Take Away)
+                // Kirim notifikasi WA ke Admin (hanya untuk Delivery, bukan Take Away)
                 if ($order->shippingMethods && $order->shippingMethods->name !== 'Take Away') {
                     $this->sendNewOrderNotificationToAdmin($order);
                 }
             }
-        } else if (strtoupper($transactionStatus) === 'FAILED') {
-            // ⚠️ Per Doku best practice: FAILED diabaikan karena customer
+        } elseif (strtoupper($transactionStatus) === 'FAILED') {
+            // Per Doku best practice: FAILED diabaikan karena customer
             // bisa ganti metode pembayaran di checkout page yang sama.
-            // Jangan ubah status order.
             Log::info('Doku callback: FAILED status received, ignoring.', [
-                'doku_invoice_number' => $invoiceNumber
+                'doku_invoice_number' => $invoiceNumber,
             ]);
         }
 
@@ -193,7 +198,7 @@ class PaymentController extends Controller
     }
 
     /**
-     * Restore stock when order is cancelled/expired
+     * Pulihkan stok produk saat order dibatalkan atau kedaluwarsa.
      */
     private function restoreStock(Order $order): void
     {
@@ -207,16 +212,14 @@ class PaymentController extends Controller
     }
 
     /**
-     * Kirim notifikasi WA pesanan baru ke Admin
+     * Kirim notifikasi WhatsApp pesanan baru ke Admin.
      */
     private function sendNewOrderNotificationToAdmin(Order $order): void
     {
-        $adminPhone = '087784488639'; // Nomor tujuan WA Admin
-        
-        $customerName = $order->shippingAddresses->first_name ?? ($order->users?->full_name ?? 'Customer');
+        $customerName  = $order->shippingAddresses->first_name ?? ($order->users?->full_name ?? 'Customer');
         $customerPhone = $order->shippingAddresses->phone_number ?? ($order->users?->phone_number ?? '-');
-        $address = $order->shippingAddresses->address ?? '-';
-        
+        $address       = $order->shippingAddresses->address ?? '-';
+
         $message = "Halo Admin,\n\n"
                  . "Terdapat pesanan *DELIVERY* baru yang sudah *LUNAS*!\n\n"
                  . "*Detail Pesanan:*\n"
@@ -226,9 +229,8 @@ class PaymentController extends Controller
                  . "- Nama: {$customerName}\n"
                  . "- No HP: {$customerPhone}\n"
                  . "- Alamat: {$address}\n\n"
-                 . "Silakan cek dashboard admin untuk melihat barang yang dibeli dan memproses pesanannya. Terima kasih!";
-                 
-        $fonnte = new FonnteService();
-        $fonnte->sendMessage($adminPhone, $message);
+                 . 'Silakan cek dashboard admin untuk melihat barang yang dibeli dan memproses pesanannya. Terima kasih!';
+
+        $this->fonnteService->sendMessage(self::ADMIN_PHONE, $message);
     }
 }

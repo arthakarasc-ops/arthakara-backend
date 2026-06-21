@@ -2,25 +2,20 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class OrderItem extends Model
 {
-    protected $table = "order_items";
-    protected $primaryKey = "id";
-    protected $keyType = "int";
-    public $timestamps = true;
-    public $incrementing = true;
+    protected $table = 'order_items';
+
     protected $fillable = [
         'order_id',
         'product_variant_id',
         'quantity',
         'price_at_purchase',
         'total_price',
-        'scents'
+        'scents',
     ];
 
     protected $casts = [
@@ -31,12 +26,13 @@ class OrderItem extends Model
         'product_variant_id' => 'integer',
     ];
 
-    public function productVariants(): BelongsTo {
-        return $this->belongsTo(ProductVariant::class, "product_variant_id", "id")->withTrashed();
+    public function productVariants(): BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id')->withTrashed();
     }
 
-    public function orders(): BelongsTo {
-        return $this->belongsTo(Order::class, "order_id", "id");
+    public function orders(): BelongsTo
+    {
+        return $this->belongsTo(Order::class, 'order_id');
     }
-
 }

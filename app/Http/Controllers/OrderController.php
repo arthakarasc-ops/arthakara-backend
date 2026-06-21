@@ -11,14 +11,20 @@ use App\Models\BillingAddress;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\ProductVariant;
+use App\Models\Scent;
 use App\Models\ShippingMethod;
+use App\Models\User;
+use App\Services\RajaOngkirService;
 use Exception;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
@@ -39,7 +45,7 @@ class OrderController extends Controller
 
         return response()->json([
             'data' => OrderResource::collection($query->get())
-        ])->setStatusCode(200);
+        ], 200);
     }
 
     public function getUserOrders(Request $request): JsonResponse
@@ -52,17 +58,17 @@ class OrderController extends Controller
             ->with(['users', 'statuses'])
             ->where('user_id', $user->id);
 
-        if ($date != null) {
+        if ($date) {
             $query->whereDate('created_at', $date);
         }
 
-        if ($statusId != null) {
+        if ($statusId) {
             $query->where('status_id', $statusId);
         }
 
         return response()->json([
             'data' => OrderUserResource::collection($query->get())
-        ])->setStatusCode(200);
+        ], 200);
     }
 
     public function getOrderDetail(int $orderId): JsonResponse
@@ -80,7 +86,7 @@ class OrderController extends Controller
         if (!$order) {
             throw new HttpResponseException(response()->json([
                 'error' => 'Order not found.'
-            ])->setStatusCode(404));
+            ], 404));
         }
 
         $orderItems = OrderItem::with([
@@ -129,22 +135,22 @@ class OrderController extends Controller
                 'updated_at'  => $order->updated_at->format('d-M-y'),
                 'items'       => OrderItemResource::collection($orderItems),
             ]
-        ])->setStatusCode(200);
+        ], 200);
     }
 
     public function createNewOrder(OrderCreateRequest $request): JsonResponse
     {
         $authenticatedUser = auth('sanctum')->user();
-        $decayMinutes = 1;
-        $maxAttemps   = 3;
-        $key          = $authenticatedUser 
-            ? ('create-order: ' . $authenticatedUser->email) 
+        $maxAttempts       = 3;
+        $decayMinutes      = 1;
+        $key               = $authenticatedUser
+            ? ('create-order: ' . $authenticatedUser->email)
             : ('create-order-guest: ' . $request->ip());
 
-        if (RateLimiter::tooManyAttempts($key, $maxAttemps)) {
-            $second = RateLimiter::availableIn($key);
+        if (RateLimiter::tooManyAttempts($key, $maxAttempts)) {
+            $seconds = RateLimiter::availableIn($key);
             throw new HttpResponseException(response()->json([
-                'error' => 'Too many attempts. Please try again after ' . $second . ' seconds.'
+                'error' => 'Too many attempts. Please try again after ' . $seconds . ' seconds.'
             ]));
         }
 
@@ -155,26 +161,22 @@ class OrderController extends Controller
         try {
             DB::beginTransaction();
 
-            $user = $authenticatedUser;
-            if (!$user) {
-                // Find or create the default guest user
-                $user = \App\Models\User::firstOrCreate(
-                    ['email' => 'guest@arthakara.id'],
-                    [
-                        'full_name' => 'Guest User',
-                        'nickname' => 'Guest',
-                        'phone_number' => $request->input('shipping_address.phone_number', '-'),
-                        'password' => bcrypt(\Illuminate\Support\Str::random(16)),
-                        'is_admin' => false,
-                    ]
-                );
-            }
+            $user = $authenticatedUser ?? User::firstOrCreate(
+                ['email' => 'guest@arthakara.id'],
+                [
+                    'full_name'    => 'Guest User',
+                    'nickname'     => 'Guest',
+                    'phone_number' => $request->input('shipping_address.phone_number', '-'),
+                    'password'     => bcrypt(Str::random(16)),
+                    'is_admin'     => false,
+                ]
+            );
 
-            // ✅ Validasi scent hanya jika diberikan
+            // Validasi scent tidak boleh duplikat dalam satu item
             foreach ($data['items'] as $index => $item) {
                 if (!empty($item['scents'])) {
                     if (count(array_unique($item['scents'])) !== count($item['scents'])) {
-                        throw new Exception("Item ke-" . ($index + 1) . ": Pilih wangi yang berbeda (tidak boleh memilih wangi yang sama 2x).");
+                        throw new Exception('Item ke-' . ($index + 1) . ': Pilih wangi yang berbeda (tidak boleh memilih wangi yang sama 2x).');
                     }
                 }
             }
@@ -212,17 +214,16 @@ class OrderController extends Controller
             }
 
             $itemTotalPrice = 0;
-            $totalWeight = 0;
+            $totalWeight    = 0;
             $processedItems = [];
 
             foreach ($data['items'] as $item) {
-                $variant = \App\Models\ProductVariant::with('product')->find($item['product_variant_id']);
+                $variant = ProductVariant::with('product')->find($item['product_variant_id']);
 
                 if (!$variant || !$variant->product) {
                     throw new Exception('Produk atau varian tidak ditemukan.');
                 }
 
-                // ✅ Validasi stok produk
                 if ($variant->product->stock < $item['quantity']) {
                     throw new Exception(
                         'Stok tidak mencukupi untuk produk: ' . $variant->product->name .
@@ -233,9 +234,8 @@ class OrderController extends Controller
                 $extraPrice = 0;
                 $itemScents = $item['scents'] ?? [];
 
-                // ✅ Validasi scent hanya jika diberikan
                 if (!empty($itemScents)) {
-                    $scents = \App\Models\Scent::whereIn('id', $itemScents)
+                    $scents = Scent::whereIn('id', $itemScents)
                         ->where('is_active', true)
                         ->get();
 
@@ -250,7 +250,7 @@ class OrderController extends Controller
                 $itemTotal  = $unitPrice * $item['quantity'];
 
                 $itemTotalPrice += $itemTotal;
-                $totalWeight += ($variant->product->weight ?? 50) * $item['quantity'];
+                $totalWeight    += ($variant->product->weight ?? 50) * $item['quantity'];
 
                 $processedItems[] = [
                     'product_variant_id' => $item['product_variant_id'],
@@ -263,13 +263,13 @@ class OrderController extends Controller
 
             $shippingCost = 0;
 
-            if ($data['shipping_method_id'] == 1) { // Delivery
+            // ID 1 = Delivery, selain itu = Take Away (tanpa ongkir)
+            if ($data['shipping_method_id'] == 1) {
                 try {
-                    // Verify with RajaOngkir
-                    $rajaOngkirService = app(\App\Services\RajaOngkirService::class);
+                    $rajaOngkirService = app(RajaOngkirService::class);
                     $costs = $rajaOngkirService->getCost(
                         $data['destination_city_id'],
-                        $totalWeight > 0 ? $totalWeight : 1, // min 1 gram
+                        $totalWeight > 0 ? $totalWeight : 1,
                         $data['courier_code']
                     );
 
@@ -281,21 +281,16 @@ class OrderController extends Controller
                         }
                     }
 
-                    if ($validCost === null) {
-                        $shippingCost = (float) $data['shipping_cost'];
-                    } else {
-                        $shippingCost = $validCost;
-                    }
-                } catch (\Exception $ex) {
-                    \Illuminate\Support\Facades\Log::warning("RajaOngkir cost calculation failed: " . $ex->getMessage() . ". Falling back to frontend cost.");
+                    $shippingCost = $validCost ?? (float) $data['shipping_cost'];
+                } catch (Exception $ex) {
+                    Log::warning('RajaOngkir cost calculation failed: ' . $ex->getMessage() . '. Falling back to frontend cost.');
                     $shippingCost = (float) $data['shipping_cost'];
                 }
-            } else {
-                // Take away
-                $shippingCost = 0;
             }
 
             $orderTotal = $itemTotalPrice + $shippingCost;
+
+            $isDelivery = $data['shipping_method_id'] == 1;
 
             $order = Order::create([
                 'user_id'             => $user->id,
@@ -306,11 +301,11 @@ class OrderController extends Controller
                 'status_id'           => 1, // Pending
                 'payment_status'      => 'unpaid',
                 'tanggal_lahir'       => $data['tanggal_lahir'],
-                'courier_code'        => $data['shipping_method_id'] == 1 ? $data['courier_code'] : null,
-                'courier_service'     => $data['shipping_method_id'] == 1 ? $data['courier_service'] : null,
+                'courier_code'        => $isDelivery ? $data['courier_code'] : null,
+                'courier_service'     => $isDelivery ? $data['courier_service'] : null,
                 'shipping_cost'       => $shippingCost,
-                'destination_city_id' => $data['shipping_method_id'] == 1 ? $data['destination_city_id'] : null,
-                'origin_city_id'      => $data['shipping_method_id'] == 1 ? config('rajaongkir.origin') : null,
+                'destination_city_id' => $isDelivery ? $data['destination_city_id'] : null,
+                'origin_city_id'      => $isDelivery ? config('rajaongkir.origin') : null,
                 'total_weight'        => $totalWeight,
             ]);
 
@@ -325,7 +320,7 @@ class OrderController extends Controller
                 ]);
             }
 
-            // ✅ Kosongkan cart setelah order dibuat
+            // Kosongkan cart setelah order dibuat
             CartItem::where('user_id', $user->id)->delete();
 
             DB::commit();
@@ -333,21 +328,21 @@ class OrderController extends Controller
             return response()->json([
                 'message'   => 'Order berhasil dibuat.',
                 'data'      => [
-                    'id'          => $order->id,
                     'order_id'    => $order->id,
                     'total_price' => (int) $order->total_price,
                     'created_at'  => $order->created_at->format('d-m-Y'),
                 ],
                 'isSuccess' => true,
-            ])->setStatusCode(200);
+            ], 200);
 
         } catch (Exception $ex) {
             DB::rollBack();
+
             return response()->json([
                 'message'   => 'Gagal membuat order.',
                 'error'     => $ex->getMessage(),
                 'isSuccess' => false,
-            ])->setStatusCode(500);
+            ], 500);
         }
     }
 }

@@ -2,86 +2,77 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\ProductWebCreateRequest;
+use App\Models\CartItem;
 use App\Models\Collection;
 use App\Models\Color;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Type;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
-use Str;
+use Illuminate\Support\Str;
 
 class ProductWebController extends Controller
 {
+    /**
+     * Upload a single file to Cloudinary and return the secure URL.
+     * Returns null if the upload fails.
+     */
+    private function uploadToCloudinary(UploadedFile $file): ?string
+    {
+        $response = Cloudinary::upload($file->getRealPath());
+        return $response->getSecurePath() ?: null;
+    }
+
     public function createProduct(ProductWebCreateRequest $request)
     {
         try {
             $data = $request->validated();
 
-            // Upload image to Cloudinary
             if (!$request->hasFile('image')) {
                 return redirect()->back()->with('error', 'Image file is required.')->withInput();
             }
 
-            $uploadResponse = Cloudinary::upload($request->file('image')->getRealPath());
-            $uploadedFileUrl = $uploadResponse->getSecurePath();
+            $mainImageUrl = $this->uploadToCloudinary($request->file('image'));
 
-            if (!$uploadedFileUrl) {
+            if (!$mainImageUrl) {
                 Log::error('Cloudinary upload returned null URL');
                 return redirect()->back()->with('error', 'Failed to upload image. Please check Cloudinary credentials.')->withInput();
             }
 
             // Generate unique slug
-            $slug = Str::slug($data['name']);
+            $slug         = Str::slug($data['name']);
             $originalSlug = $slug;
-            $count = 1;
+            $count        = 1;
             while (Product::withTrashed()->where('slug', $slug)->exists()) {
                 $slug = $originalSlug . '-' . $count++;
             }
 
-            // Create the product
             $product = Product::create([
-                'name' => $data['name'],
+                'name'          => $data['name'],
                 'collection_id' => $data['collection_id'],
-                'slug' => $slug,
-                'price' => $data['price'],
-                'stock' => $data['stock'] ?? 0,
-                'description' => $data['description'],
+                'slug'          => $slug,
+                'price'         => $data['price'],
+                'stock'         => $data['stock'] ?? 0,
+                'description'   => $data['description'],
             ]);
 
-            $product->productUsageImages()->create([
-                'product_id' => $product->id,
-                'image_url'  => $uploadedFileUrl,
-            ]);
+            $product->productUsageImages()->create(['image_url' => $mainImageUrl]);
 
-            // Upload gambar kedua jika disertakan
-            if ($request->hasFile('image_2')) {
-                $upload2 = Cloudinary::upload($request->file('image_2')->getRealPath());
-                $uploadedFileUrl2 = $upload2->getSecurePath();
-                if ($uploadedFileUrl2) {
-                    $product->productUsageImages()->create([
-                        'product_id' => $product->id,
-                        'image_url'  => $uploadedFileUrl2,
-                    ]);
+            // Upload gambar tambahan (opsional)
+            foreach (['image_2', 'image_3'] as $imageField) {
+                if ($request->hasFile($imageField)) {
+                    $url = $this->uploadToCloudinary($request->file($imageField));
+                    if ($url) {
+                        $product->productUsageImages()->create(['image_url' => $url]);
+                    }
                 }
             }
 
-            // Upload gambar ketiga jika disertakan
-            if ($request->hasFile('image_3')) {
-                $upload3 = Cloudinary::upload($request->file('image_3')->getRealPath());
-                $uploadedFileUrl3 = $upload3->getSecurePath();
-                if ($uploadedFileUrl3) {
-                    $product->productUsageImages()->create([
-                        'product_id' => $product->id,
-                        'image_url'  => $uploadedFileUrl3,
-                    ]);
-                }
-            }
-
-            // 🔥 Attach types
             if ($request->has('type_ids') && !empty($request->type_ids)) {
                 $product->types()->sync($request->type_ids);
             }
@@ -90,19 +81,18 @@ class ProductWebController extends Controller
                 foreach ($request->color_ids as $colorId) {
                     ProductVariant::create([
                         'product_id' => $product->id,
-                        'color_id' => $colorId,
-                        'image_url' => $uploadedFileUrl,
-                        'stock' => $product->stock,
+                        'color_id'   => $colorId,
+                        'image_url'  => $mainImageUrl,
+                        'stock'      => $product->stock,
                     ]);
                 }
             }
 
-            // 🔥 Attach scents
             if ($request->has('scent_ids') && !empty($request->scent_ids)) {
                 $product->scents()->sync($request->scent_ids);
             }
 
-            Log::info('Product created successfully with image: ' . $uploadedFileUrl);
+            Log::info('Product created successfully with image: ' . $mainImageUrl);
 
             return redirect()->route('products.index')->with('success', 'Product created successfully!');
         } catch (\Exception $e) {
@@ -111,9 +101,10 @@ class ProductWebController extends Controller
         }
     }
 
-    public function getProducts(Request $request) {
+    public function getProducts(Request $request)
+    {
         $collectionId = $request->query('collection');
-        $typeId = $request->query('type');
+        $typeId       = $request->query('type');
 
         $query = Product::with(['collections', 'types', 'productUsageImages']);
 
@@ -127,10 +118,9 @@ class ProductWebController extends Controller
             });
         }
 
-        $products = $query->paginate(12);
-
+        $products    = $query->paginate(12);
         $collections = Collection::all();
-        $types = Type::all();
+        $types       = Type::all();
 
         return view('components.products.list_products', compact('products', 'collections', 'types'));
     }
@@ -144,22 +134,16 @@ class ProductWebController extends Controller
                 return redirect()->route('products.index')->with('error', 'Produk tidak ditemukan.');
             }
 
-            // Dapatkan semua variant ID
             $variantIds = $product->variants()->pluck('id')->toArray();
 
-            // 1. Hapus isi keranjang (cart) yang memuat varian produk ini
             if (!empty($variantIds)) {
-                \App\Models\CartItem::whereIn('product_variant_id', $variantIds)->delete();
-                
-                // 2. Hapus semua varian (Soft Delete otomatis jalan berkat trait)
+                CartItem::whereIn('product_variant_id', $variantIds)->delete();
                 $product->variants()->delete();
             }
 
-            // 3. Hapus produk utama (Soft Delete otomatis jalan berkat trait)
             $product->delete();
 
             return redirect()->route('products.index')->with('success', 'Produk berhasil dihapus.');
-
         } catch (\Exception $e) {
             Log::error('Product deletion failed: ' . $e->getMessage());
             return redirect()->route('products.index')->with('error', 'Gagal menghapus produk: ' . $e->getMessage());
@@ -176,7 +160,7 @@ class ProductWebController extends Controller
             }
 
             $collections = Collection::all();
-            $types = Type::all();
+            $types       = Type::all();
 
             return view('components.products.edit_product', compact('product', 'collections', 'types'));
         } catch (\Exception $e) {
@@ -194,122 +178,88 @@ class ProductWebController extends Controller
                 return redirect()->route('products.index')->with('error', 'Produk tidak ditemukan.');
             }
 
-            // Validate the request
             $validated = $request->validate([
-                'name' => 'required|string|max:100',
-                'collection_id' => 'required|integer|exists:collections,id',
-                'type_ids' => 'required|array|min:1',
-                'type_ids.*' => 'exists:types,id',
-                'price' => 'required|numeric|min:0',
-                'stock' => 'required|integer|min:0',
-                'description' => 'required|string',
-                'color_ids' => 'required|array|min:1',
-                'color_ids.*' => 'exists:colors,id',
-                'scent_ids' => 'nullable|array',
-                'scent_ids.*' => 'exists:scents,id',
+                'name'             => 'required|string|max:100',
+                'collection_id'    => 'required|integer|exists:collections,id',
+                'type_ids'         => 'required|array|min:1',
+                'type_ids.*'       => 'exists:types,id',
+                'price'            => 'required|numeric|min:0',
+                'stock'            => 'required|integer|min:0',
+                'description'      => 'required|string',
+                'color_ids'        => 'required|array|min:1',
+                'color_ids.*'      => 'exists:colors,id',
+                'scent_ids'        => 'nullable|array',
+                'scent_ids.*'      => 'exists:scents,id',
                 'image'            => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5000',
                 'image_2'          => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5000',
                 'image_3'          => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5000',
                 'variant_images'   => 'nullable|array',
                 'variant_images.*' => 'image|mimes:jpeg,png,jpg,gif|max:5000',
                 'variant_stocks'   => 'nullable|array',
-                'variant_stocks.*' => 'nullable|integer|min:0'
+                'variant_stocks.*' => 'nullable|integer|min:0',
             ]);
 
-            // Update basic product information
+            // Slug tidak diupdate agar link di FE tidak mati (404)
             $product->update([
-                'name' => $validated['name'],
+                'name'          => $validated['name'],
                 'collection_id' => $validated['collection_id'],
-                // Slug TIDAK diupdate di sini agar link di FE tidak mati (404)
-                'price' => $validated['price'],
-                'stock' => $validated['stock'],
-                'description' => $validated['description']
+                'price'         => $validated['price'],
+                'stock'         => $validated['stock'],
+                'description'   => $validated['description'],
             ]);
 
-            // Handle image upload if provided
             // Ambil semua gambar produk berurutan berdasarkan id
             $existingImages = $product->productUsageImages()->orderBy('id', 'asc')->get();
 
-            if ($request->hasFile('image')) {
-                $uploadResponse = Cloudinary::upload($request->file('image')->getRealPath());
-                $uploadedFileUrl = $uploadResponse->getSecurePath();
+            // Handle update untuk tiap slot gambar (image, image_2, image_3)
+            foreach (['image', 'image_2', 'image_3'] as $index => $imageField) {
+                if (!$request->hasFile($imageField)) {
+                    continue;
+                }
 
-                if (!$uploadedFileUrl) {
-                    Log::error('Cloudinary upload returned null URL');
+                $url = $this->uploadToCloudinary($request->file($imageField));
+
+                if (!$url) {
+                    Log::error('Cloudinary upload returned null URL for field: ' . $imageField);
                     return redirect()->back()->with('error', 'Failed to upload image. Please check Cloudinary credentials.')->withInput();
                 }
 
-                // Update gambar pertama (index 0)
-                if ($existingImages->count() >= 1) {
-                    $existingImages[0]->update(['image_url' => $uploadedFileUrl]);
+                if ($existingImages->count() > $index) {
+                    $existingImages[$index]->update(['image_url' => $url]);
                 } else {
-                    $product->productUsageImages()->create(['image_url' => $uploadedFileUrl]);
+                    $product->productUsageImages()->create(['image_url' => $url]);
                 }
 
-                // Refresh koleksi gambar setelah update
+                // Refresh koleksi setelah update
                 $existingImages = $product->productUsageImages()->orderBy('id', 'asc')->get();
             }
 
-            // Handle gambar kedua
-            if ($request->hasFile('image_2')) {
-                $uploadResponse2 = Cloudinary::upload($request->file('image_2')->getRealPath());
-                $uploadedFileUrl2 = $uploadResponse2->getSecurePath();
-
-                if ($uploadedFileUrl2) {
-                    // Refresh sebelum cek index
-                    $existingImages = $product->productUsageImages()->orderBy('id', 'asc')->get();
-                    if ($existingImages->count() >= 2) {
-                        $existingImages[1]->update(['image_url' => $uploadedFileUrl2]);
-                    } else {
-                        $product->productUsageImages()->create(['image_url' => $uploadedFileUrl2]);
-                    }
-                }
-            }
-
-            // Handle gambar ketiga
-            if ($request->hasFile('image_3')) {
-                $uploadResponse3 = Cloudinary::upload($request->file('image_3')->getRealPath());
-                $uploadedFileUrl3 = $uploadResponse3->getSecurePath();
-
-                if ($uploadedFileUrl3) {
-                    $existingImages = $product->productUsageImages()->orderBy('id', 'asc')->get();
-                    if ($existingImages->count() >= 3) {
-                        $existingImages[2]->update(['image_url' => $uploadedFileUrl3]);
-                    } else {
-                        $product->productUsageImages()->create(['image_url' => $uploadedFileUrl3]);
-                    }
-                }
-            }
-
-            // 🔥 Sync colors via ProductVariant
+            // Sync warna via ProductVariant
             if ($request->has('color_ids') && !empty($request->color_ids)) {
-                // Hapus variant lama yang color-nya tidak dipilih (dan bersihkan keranjang)
+                // Hapus varian lama yang warnanya tidak dipilih, bersihkan cart & order items
                 $variantsToDelete = $product->variants()->whereNotIn('color_id', $request->color_ids)->get();
-                foreach ($variantsToDelete as $v) {
-                    \App\Models\CartItem::where('product_variant_id', $v->id)->delete();
-                    \App\Models\OrderItem::where('product_variant_id', $v->id)->update(['product_variant_id' => null]);
-                    $v->delete();
+                foreach ($variantsToDelete as $variant) {
+                    CartItem::where('product_variant_id', $variant->id)->delete();
+                    OrderItem::where('product_variant_id', $variant->id)->update(['product_variant_id' => null]);
+                    $variant->delete();
                 }
-                
-                // Ambil gambar utama produk sebagai fallback
-                $mainImageUrl = $product->productUsageImages->first()->image_url ?? 'https://via.placeholder.com/150';
+
+                $mainImageUrl = $product->productUsageImages->first()->image_url ?? null;
 
                 foreach ($request->color_ids as $colorId) {
                     $variantData = [];
 
-                    // Ambil stok spesifik varian jika ada, jika tidak gunakan stok umum produk
                     if ($request->has("variant_stocks.{$colorId}") && $request->variant_stocks[$colorId] !== null) {
                         $variantData['stock'] = $request->variant_stocks[$colorId];
                     } else {
                         $variantData['stock'] = $product->stock;
                     }
 
-                    // Cek apakah ada upload gambar khusus untuk varian ini
                     if ($request->hasFile("variant_images.{$colorId}")) {
-                        $variantUploadResponse = Cloudinary::upload($request->file("variant_images.{$colorId}")->getRealPath());
-                        $variantData['image_url'] = $variantUploadResponse->getSecurePath();
+                        $variantUrl = $this->uploadToCloudinary($request->file("variant_images.{$colorId}"));
+                        $variantData['image_url'] = $variantUrl;
                     } else {
-                        // Jika tidak ada upload baru, pastikan ada image_url (fallback ke main image jika baru dibuat)
+                        // Gunakan gambar utama sebagai fallback untuk varian baru
                         $existingVariant = $product->variants()->where('color_id', $colorId)->first();
                         if (!$existingVariant) {
                             $variantData['image_url'] = $mainImageUrl;
@@ -325,14 +275,14 @@ class ProductWebController extends Controller
                 $product->variants()->delete();
             }
 
-            // 🔥 Sync types
+            // Sync types
             if ($request->has('type_ids') && !empty($request->type_ids)) {
                 $product->types()->sync($request->type_ids);
             } else {
                 $product->types()->detach();
             }
 
-            // 🔥 Sync scents
+            // Sync scents
             if ($request->has('scent_ids') && !empty($request->scent_ids)) {
                 $product->scents()->sync($request->scent_ids);
             } else {
@@ -359,10 +309,8 @@ class ProductWebController extends Controller
         $variants = ProductVariant::with(['color'])->where('product_id', $productId)->get();
 
         return view('components.products.detail_product', [
-            'product' => $product,
-            'variants' => $variants
+            'product'  => $product,
+            'variants' => $variants,
         ]);
     }
- 
 }
-

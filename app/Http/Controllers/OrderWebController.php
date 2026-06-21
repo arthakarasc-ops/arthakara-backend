@@ -5,11 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\Scent;
 use App\Models\Status;
-use Illuminate\Http\JsonResponse;
+use App\Services\FonnteService;
 use Illuminate\Http\Request;
 
 class OrderWebController extends Controller
 {
+    protected FonnteService $fonnteService;
+
+    public function __construct(FonnteService $fonnteService)
+    {
+        $this->fonnteService = $fonnteService;
+    }
+
     public function showOrders(Request $request)
     {
         $statusId = $request->query('status_id');
@@ -20,13 +27,13 @@ class OrderWebController extends Controller
             $query->where('status_id', $statusId);
         }
 
-        $orders = $query->latest()->get();
+        $orders   = $query->latest()->get();
         $statuses = Status::all();
 
         return view('components.orders.list_orders', [
-            'orders' => $orders,
-            'statuses' => $statuses,
-            'selectedStatusId' => $statusId
+            'orders'           => $orders,
+            'statuses'         => $statuses,
+            'selectedStatusId' => $statusId,
         ]);
     }
 
@@ -39,34 +46,14 @@ class OrderWebController extends Controller
             'shippingAddresses',
             'billingAddresses',
             'shippingMethods',
-            'statuses'
+            'statuses',
         ])->findOrFail($orderId);
 
-        // Kumpulkan semua scent ID dari seluruh order items dalam satu pass
+        // Kumpulkan semua scent ID unik dari seluruh order items
         $allScentIds = [];
         foreach ($order->orderItems as $item) {
-            $raw = $item->getRawOriginal('scents');
-
-            if (empty($raw) || $raw === 'null') {
-                continue;
-            }
-
-            // Decode: bisa berupa array (cast), JSON string biasa, atau double-encoded
-            if (is_array($item->scents)) {
-                $ids = $item->scents;
-            } else {
-                $decoded = json_decode($raw, true);
-                if (is_string($decoded)) {
-                    $decoded = json_decode($decoded, true); // double-encoded fallback
-                }
-                $ids = is_array($decoded) ? $decoded : [];
-            }
-
-            foreach ($ids as $id) {
-                $intId = (int) $id;
-                if ($intId > 0) {
-                    $allScentIds[] = $intId;
-                }
+            foreach ($this->resolveScentIds($item) as $id) {
+                $allScentIds[] = $id;
             }
         }
 
@@ -77,25 +64,10 @@ class OrderWebController extends Controller
 
         // Pasang resolved scent names ke setiap order item
         foreach ($order->orderItems as $item) {
-            $raw = $item->getRawOriginal('scents');
-
-            if (empty($raw) || $raw === 'null') {
-                $item->resolved_scent_names = collect();
-                continue;
-            }
-
-            if (is_array($item->scents)) {
-                $ids = $item->scents;
-            } else {
-                $decoded = json_decode($raw, true);
-                if (is_string($decoded)) {
-                    $decoded = json_decode($decoded, true);
-                }
-                $ids = is_array($decoded) ? $decoded : [];
-            }
+            $ids = $this->resolveScentIds($item);
 
             $item->resolved_scent_names = collect($ids)
-                ->map(fn($id) => $scentsMap->get((int) $id))
+                ->map(fn($id) => $scentsMap->get($id))
                 ->filter()
                 ->pluck('name');
         }
@@ -111,16 +83,11 @@ class OrderWebController extends Controller
     public function updateStatus(Request $request, $orderId)
     {
         $request->validate([
-            'status_id' => 'required|exists:statuses,id',
+            'status_id'       => 'required|exists:statuses,id',
             'tracking_number' => 'nullable|string|max:100',
         ]);
 
         $order = Order::with(['shippingAddresses', 'users'])->findOrFail($orderId);
-
-        // Validasi pembayaran dimatikan sementara agar admin bisa proses order via WA
-        // if ($order->payment_status !== 'paid' && !in_array($request->status_id, [1, 5])) {
-        //     return redirect()->back()->with('error', 'Gagal memperbarui status: Pesanan ini belum lunas!');
-        // }
 
         $order->status_id = $request->status_id;
 
@@ -129,11 +96,8 @@ class OrderWebController extends Controller
         // Jika ada input nomor resi dan resinya baru (atau diubah)
         if ($request->filled('tracking_number') && $oldTrackingNumber !== $request->tracking_number) {
             $order->tracking_number = $request->tracking_number;
-            
-            // Tentukan apakah ini resi pertama kali atau perubahan resi
+
             $isUpdate = !empty($oldTrackingNumber);
-            
-            // Kirim notifikasi WA otomatis
             $this->sendWA($order, $isUpdate);
         }
 
@@ -159,70 +123,58 @@ class OrderWebController extends Controller
         return redirect()->back()->with('error', 'Gagal mengirim WhatsApp. Pastikan No. HP tersedia dan Fonnte terhubung.');
     }
 
-    private function sendWA($order, $isUpdate = false)
+    /**
+     * Kirim notifikasi WhatsApp nomor resi ke pelanggan.
+     */
+    private function sendWA(Order $order, bool $isUpdate = false): bool
     {
-        if ($order->shippingAddresses && $order->shippingAddresses->phone_number) {
-            $phone = $order->shippingAddresses->phone_number;
-            $customerName = $order->shippingAddresses->first_name;
-            
-            if ($isUpdate) {
-                $message = "Halo Kak {$customerName},\n\n"
-                         . "Terdapat *Pembaruan Nomor Resi* untuk Pesanan Arthakara Anda (ID: #{$order->id}).\n"
-                         . "Nomor Resi Baru: *{$order->tracking_number}*\n\n"
-                         . "Terima kasih sudah berbelanja!";
-            } else {
-                $message = "Halo Kak {$customerName},\n\n"
-                         . "Pesanan Arthakara Anda (ID: #{$order->id}) sudah dikirim!\n"
-                         . "Nomor Resi: *{$order->tracking_number}*\n\n"
-                         . "Terima kasih sudah berbelanja!";
-            }
-            
-            $fonnte = new \App\Services\FonnteService();
-            return $fonnte->sendMessage($phone, $message);
+        if (!$order->shippingAddresses || !$order->shippingAddresses->phone_number) {
+            return false;
         }
-        return false;
+
+        $phone        = $order->shippingAddresses->phone_number;
+        $customerName = $order->shippingAddresses->first_name;
+
+        if ($isUpdate) {
+            $message = "Halo Kak {$customerName},\n\n"
+                     . "Terdapat *Pembaruan Nomor Resi* untuk Pesanan Arthakara Anda (ID: #{$order->id}).\n"
+                     . "Nomor Resi Baru: *{$order->tracking_number}*\n\n"
+                     . 'Terima kasih sudah berbelanja!';
+        } else {
+            $message = "Halo Kak {$customerName},\n\n"
+                     . "Pesanan Arthakara Anda (ID: #{$order->id}) sudah dikirim!\n"
+                     . "Nomor Resi: *{$order->tracking_number}*\n\n"
+                     . 'Terima kasih sudah berbelanja!';
+        }
+
+        return $this->fonnteService->sendMessage($phone, $message);
     }
 
-    // public function getOrders(Request $request) {
-    //     $statuses = Status::all();
+    /**
+     * Resolve daftar integer scent ID dari satu order item.
+     * Menangani berbagai format penyimpanan (array cast, JSON string, double-encoded).
+     *
+     * @return int[]
+     */
+    private function resolveScentIds($item): array
+    {
+        $raw = $item->getRawOriginal('scents');
 
-    //     $date = $request->query('date');
-    //     $statusId = $request->query('status_id');
+        if (empty($raw) || $raw === 'null') {
+            return [];
+        }
 
-    //     $orders = Order::with(['users', 'statuses']);
+        $ids = is_array($item->scents) ? $item->scents : [];
 
-    //     if ($date) {
-    //         $orders->whereDate('created_at', $date);
-    //     }
+        if (empty($ids)) {
+            $decoded = json_decode($raw, true);
+            // Tangani double-encoded JSON
+            if (is_string($decoded)) {
+                $decoded = json_decode($decoded, true);
+            }
+            $ids = is_array($decoded) ? $decoded : [];
+        }
 
-    //     if ($statusId) {
-    //         $orders->where('status_id', $statusId);
-    //     }
-
-    //     return view('orders.components.list-orders', [
-    //         'orders' => $orders->get(),
-    //         'statuses' => $statuses,
-    //         'filters' => [
-    //             'date' => $date,
-    //             'status_id' => $statusId
-    //         ]
-    //     ]);
-    // }
-
-    // public function updateOrderStatus(Request $request, $orderId): JsonResponse {
-    //     $order = Order::findOrFail($orderId);
-    //     $request->validate([
-    //         'status_id' => 'required|exists:statuses,id',
-    //     ]);
-
-    //     $order->status_id = $request->status_id;
-    //     $order->save();
-
-    //     return response()->json([
-    //         'message' => 'Status updated successfully'
-    //     ]);
-    // }
+        return array_values(array_filter(array_map('intval', $ids)));
+    }
 }
-
-
-
